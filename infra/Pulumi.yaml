@@ -1,0 +1,3 @@
+name: dagster-poc-infra
+runtime: nodejs
+description: Infraestructura para POC de Dagster con S3, SQS y Fargate
