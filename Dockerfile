@@ -19,4 +19,4 @@ RUN pip install --no-cache-dir -e .
 EXPOSE 3000
 
 # Comando por defecto
-CMD ["dagster", "dev", "-h", "0.0.0.0", "-p", "3000"]
+CMD ["dagster", "dev", "-h", "0.0.0.0", "-p", "3000", "-w", "workspace.yaml"]

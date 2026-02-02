@@ -1,25 +1,28 @@
 from dagster import job
 
-from ..ops.fargate_ops import run_fargate_task
+from ..ops.fargate_ops import process_file_with_pipes
 
 
 @job
 def fargate_job():
-    """Job que ejecuta una tarea en AWS Fargate.
+    """
+    Job that processes files using Dagster Pipes with ECS Fargate.
 
-    Configuración requerida al ejecutar:
+    Features:
+    - Auto-scales resources based on file size
+    - Bi-directional communication via Dagster Pipes
+    - Real-time logs and metadata streaming
+    - Clear success/failure semantics
+
+    Configuration example:
     ```yaml
     ops:
-      run_fargate_task:
+      process_file_with_pipes:
         config:
-          task_definition: "mi-task-definition"
-          subnets:
-            - "subnet-xxxxx"
-          security_groups:
-            - "sg-xxxxx"
-          container_name: "mi-container"  # opcional
-          command: ["python", "script.py"]  # opcional
+          s3_bucket: "my-bucket"
+          s3_key: "data/file.csv"
+          task_size: null  # auto-detect
           wait_for_completion: true
     ```
     """
-    run_fargate_task()
+    process_file_with_pipes()

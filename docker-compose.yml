@@ -3,9 +3,23 @@ services:
     build: .
     ports:
       - "3000:3000"
+    env_file:
+      - .env
     environment:
       - AWS_PROFILE=${AWS_PROFILE:-default}
       - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-us-east-1}
+      # ECS/Fargate config
+      - ECS_CLUSTER_NAME=${ECS_CLUSTER_NAME}
+      - ECS_SUBNETS=${ECS_SUBNETS}
+      - ECS_SECURITY_GROUPS=${ECS_SECURITY_GROUPS}
+      - ECS_LOG_GROUP_NAME=${ECS_LOG_GROUP_NAME}
+      # Task definitions por tamaño
+      - ECS_TASK_DEFINITION_SMALL=${ECS_TASK_DEFINITION_SMALL}
+      - ECS_TASK_DEFINITION_MEDIUM=${ECS_TASK_DEFINITION_MEDIUM}
+      - ECS_TASK_DEFINITION_LARGE=${ECS_TASK_DEFINITION_LARGE}
+      - ECS_TASK_DEFINITION_XLARGE=${ECS_TASK_DEFINITION_XLARGE}
+      # SQS config
+      - SQS_QUEUE_URL=${SQS_QUEUE_URL}
     volumes:
       # Montar código para desarrollo (hot reload)
       - ./dagster_poc:/app/dagster_poc:ro

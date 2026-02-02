@@ -6,18 +6,14 @@ const environment = config.get("environment") || "dev";
 const projectName = `dagster-poc-${environment}`;
 
 // =============================================================================
-// VPC - Usar default VPC para el POC
+// VPC - Configuración de VPC y Subnets existentes
 // =============================================================================
-const defaultVpc = aws.ec2.getVpc({ default: true });
-const defaultSubnets = defaultVpc.then((vpc) =>
-  aws.ec2.getSubnets({
-    filters: [{ name: "vpc-id", values: [vpc.id] }],
-  })
-);
+const vpcId = config.require("vpcId");
+const configSubnetIds = config.requireObject<string[]>("subnetIds");
 
 // Security Group para Fargate
 const fargateSg = new aws.ec2.SecurityGroup(`${projectName}-fargate-sg`, {
-  vpcId: defaultVpc.then((vpc) => vpc.id),
+  vpcId: vpcId,
   description: "Security group para Fargate tasks",
   egress: [
     {
@@ -39,6 +35,35 @@ const bucket = new aws.s3.BucketV2(`${projectName}-bucket`, {
 });
 
 // =============================================================================
+// DynamoDB - Ingest State Table
+// =============================================================================
+const ingestStateTable = new aws.dynamodb.Table(`${projectName}-ingest-state`, {
+  name: `${projectName}-ingest-state`,
+  billingMode: "PAY_PER_REQUEST",
+  hashKey: "pk",
+  rangeKey: "sk",
+  attributes: [
+    { name: "pk", type: "S" },
+    { name: "sk", type: "S" },
+    { name: "gsi1pk", type: "S" },
+    { name: "gsi1sk", type: "S" },
+  ],
+  globalSecondaryIndexes: [
+    {
+      name: "gsi1",
+      hashKey: "gsi1pk",
+      rangeKey: "gsi1sk",
+      projectionType: "ALL",
+    },
+  ],
+  ttl: {
+    attributeName: "ttl",
+    enabled: true,
+  },
+  tags: { Environment: environment },
+});
+
+// =============================================================================
 // SQS Queue
 // =============================================================================
 const dlq = new aws.sqs.Queue(`${projectName}-dlq`, {
@@ -47,7 +72,7 @@ const dlq = new aws.sqs.Queue(`${projectName}-dlq`, {
 });
 
 const queue = new aws.sqs.Queue(`${projectName}-queue`, {
-  visibilityTimeoutSeconds: 300, // 5 minutos
+  visibilityTimeoutSeconds: 900, // 15 minutos para tareas largas
   messageRetentionSeconds: 86400, // 1 día
   redrivePolicy: dlq.arn.apply((arn) =>
     JSON.stringify({
@@ -80,7 +105,7 @@ const queuePolicy = new aws.sqs.QueuePolicy(`${projectName}-queue-policy`, {
 });
 
 // S3 → SQS notification
-const bucketNotification = new aws.s3.BucketNotification(
+new aws.s3.BucketNotification(
   `${projectName}-bucket-notification`,
   {
     bucket: bucket.id,
@@ -95,9 +120,27 @@ const bucketNotification = new aws.s3.BucketNotification(
 );
 
 // =============================================================================
+// ECR Repository para el Worker
+// =============================================================================
+const workerRepo = new aws.ecr.Repository(`${projectName}-worker`, {
+  name: `${projectName}-worker`,
+  forceDelete: true,
+  imageScanningConfiguration: {
+    scanOnPush: true,
+  },
+  tags: { Environment: environment },
+});
+
+// =============================================================================
 // ECS Cluster
 // =============================================================================
 const cluster = new aws.ecs.Cluster(`${projectName}-cluster`, {
+  settings: [
+    {
+      name: "containerInsights",
+      value: "enabled",
+    },
+  ],
   tags: { Environment: environment },
 });
 
@@ -105,7 +148,7 @@ const cluster = new aws.ecs.Cluster(`${projectName}-cluster`, {
 // IAM Roles
 // =============================================================================
 
-// Task Execution Role (para que ECS pueda pull images, logs, etc)
+// Task Execution Role
 const taskExecutionRole = new aws.iam.Role(
   `${projectName}-task-execution-role`,
   {
@@ -128,7 +171,7 @@ new aws.iam.RolePolicyAttachment(`${projectName}-task-execution-policy`, {
     "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy",
 });
 
-// Task Role (permisos para el contenedor)
+// Task Role con permisos completos
 const taskRole = new aws.iam.Role(`${projectName}-task-role`, {
   assumeRolePolicy: JSON.stringify({
     Version: "2012-10-17",
@@ -142,28 +185,44 @@ const taskRole = new aws.iam.Role(`${projectName}-task-role`, {
   }),
 });
 
-// Permisos para acceder a S3 y SQS desde el contenedor
+// Permisos para S3, DynamoDB y Dagster Pipes (CloudWatch)
 new aws.iam.RolePolicy(`${projectName}-task-policy`, {
   role: taskRole.id,
   policy: pulumi
-    .all([bucket.arn, queue.arn])
-    .apply(([bucketArn, queueArn]) =>
+    .all([bucket.arn, ingestStateTable.arn])
+    .apply(([bucketArn, tableArn]: [string, string]) =>
       JSON.stringify({
         Version: "2012-10-17",
         Statement: [
           {
             Effect: "Allow",
-            Action: ["s3:GetObject", "s3:ListBucket"],
+            Action: [
+              "s3:GetObject",
+              "s3:PutObject",
+              "s3:ListBucket",
+              "s3:HeadObject",
+            ],
             Resource: [bucketArn, `${bucketArn}/*`],
           },
           {
             Effect: "Allow",
             Action: [
-              "sqs:ReceiveMessage",
-              "sqs:DeleteMessage",
-              "sqs:GetQueueAttributes",
+              "dynamodb:GetItem",
+              "dynamodb:PutItem",
+              "dynamodb:UpdateItem",
+              "dynamodb:Query",
             ],
-            Resource: queueArn,
+            Resource: [tableArn, `${tableArn}/index/*`],
+          },
+          {
+            // Dagster Pipes - CloudWatch Logs
+            Effect: "Allow",
+            Action: [
+              "logs:CreateLogStream",
+              "logs:PutLogEvents",
+              "logs:DescribeLogStreams",
+            ],
+            Resource: "*",
           },
         ],
       })
@@ -174,152 +233,80 @@ new aws.iam.RolePolicy(`${projectName}-task-policy`, {
 // CloudWatch Log Group
 // =============================================================================
 const logGroup = new aws.cloudwatch.LogGroup(`${projectName}-logs`, {
-  retentionInDays: 7,
+  retentionInDays: 14,
   tags: { Environment: environment },
 });
 
 // =============================================================================
-// ECS Task Definition
+// ECS Task Definitions - Multiple sizes for dynamic scaling
 // =============================================================================
 const region = aws.getRegion();
 
-const taskDefinition = new aws.ecs.TaskDefinition(`${projectName}-task`, {
-  family: `${projectName}-task`,
-  networkMode: "awsvpc",
-  requiresCompatibilities: ["FARGATE"],
-  cpu: "256",
-  memory: "512",
-  executionRoleArn: taskExecutionRole.arn,
-  taskRoleArn: taskRole.arn,
-  containerDefinitions: pulumi
-    .all([logGroup.name, bucket.id, queue.url, region])
-    .apply(([logGroupName, bucketName, queueUrl, regionData]) =>
-      JSON.stringify([
-        {
-          name: "processor",
-          image: "amazon/aws-cli:latest", // Cambiar por tu imagen
-          essential: true,
-          command: [
-            "sh",
-            "-c",
-            "echo 'Processing file from S3...' && echo $S3_EVENT && sleep 10 && echo 'Done!'",
-          ],
-          environment: [
-            { name: "BUCKET_NAME", value: bucketName },
-            { name: "QUEUE_URL", value: queueUrl },
-          ],
-          logConfiguration: {
-            logDriver: "awslogs",
-            options: {
-              "awslogs-group": logGroupName,
-              "awslogs-region": regionData.name,
-              "awslogs-stream-prefix": "processor",
-            },
-          },
-        },
-      ])
-    ),
-  tags: { Environment: environment },
-});
+// Configuraciones de recursos por tamaño de archivo
+const taskConfigs = {
+  small: { cpu: "256", memory: "512" }, // < 50 MB
+  medium: { cpu: "512", memory: "1024" }, // 50-200 MB
+  large: { cpu: "1024", memory: "2048" }, // 200-500 MB
+  xlarge: { cpu: "2048", memory: "4096" }, // > 500 MB
+};
 
-// =============================================================================
-// EventBridge Pipes: SQS → Fargate
-// =============================================================================
+// Crear task definitions para cada tamaño
+const taskDefinitions: Record<string, aws.ecs.TaskDefinition> = {};
 
-// IAM Role para EventBridge Pipes
-const pipesRole = new aws.iam.Role(`${projectName}-pipes-role`, {
-  assumeRolePolicy: JSON.stringify({
-    Version: "2012-10-17",
-    Statement: [
-      {
-        Action: "sts:AssumeRole",
-        Principal: { Service: "pipes.amazonaws.com" },
-        Effect: "Allow",
-      },
-    ],
-  }),
-});
-
-const pipesPolicy = new aws.iam.RolePolicy(`${projectName}-pipes-policy`, {
-  role: pipesRole.id,
-  policy: pulumi
-    .all([
-      queue.arn,
-      cluster.arn,
-      taskDefinition.arn,
-      taskExecutionRole.arn,
-      taskRole.arn,
-    ])
-    .apply(([queueArn, clusterArn, taskDefArn, execRoleArn, taskRoleArn]) =>
-      JSON.stringify({
-        Version: "2012-10-17",
-        Statement: [
-          {
-            Effect: "Allow",
-            Action: [
-              "sqs:ReceiveMessage",
-              "sqs:DeleteMessage",
-              "sqs:GetQueueAttributes",
-            ],
-            Resource: queueArn,
-          },
-          {
-            Effect: "Allow",
-            Action: ["ecs:RunTask"],
-            Resource: taskDefArn,
-          },
-          {
-            Effect: "Allow",
-            Action: ["iam:PassRole"],
-            Resource: [execRoleArn, taskRoleArn],
-          },
-        ],
-      })
-    ),
-});
-
-// EventBridge Pipe
-const pipe = new aws.pipes.Pipe(
-  `${projectName}-pipe`,
-  {
-    roleArn: pipesRole.arn,
-    source: queue.arn,
-    target: cluster.arn,
-    sourceParameters: {
-      sqsQueueParameters: {
-        batchSize: 1,
-      },
-    },
-    targetParameters: {
-      ecsTaskParameters: {
-        taskDefinitionArn: taskDefinition.arn,
-        launchType: "FARGATE",
-        networkConfiguration: {
-          awsvpcConfiguration: {
-            subnets: defaultSubnets.then((s) => s.ids),
-            securityGroups: [fargateSg.id],
-            assignPublicIp: "ENABLED",
-          },
-        },
-        overrides: {
-          containerOverrides: [
-            {
-              name: "processor",
-              environments: [
-                {
-                  name: "S3_EVENT",
-                  value: "$.body",
+for (const [size, resources] of Object.entries(taskConfigs)) {
+  taskDefinitions[size] = new aws.ecs.TaskDefinition(
+    `${projectName}-task-${size}`,
+    {
+      family: `${projectName}-task-${size}`,
+      networkMode: "awsvpc",
+      requiresCompatibilities: ["FARGATE"],
+      cpu: resources.cpu,
+      memory: resources.memory,
+      executionRoleArn: taskExecutionRole.arn,
+      taskRoleArn: taskRole.arn,
+      containerDefinitions: pulumi
+        .all([
+          logGroup.name,
+          bucket.id,
+          ingestStateTable.name,
+          region,
+          workerRepo.repositoryUrl,
+        ])
+        .apply(
+          ([logGroupName, bucketName, tableName, regionData, repoUrl]: [
+            string,
+            string,
+            string,
+            aws.GetRegionResult,
+            string,
+          ]) =>
+            JSON.stringify([
+              {
+                name: "worker",
+                image: `${repoUrl}:latest`,
+                essential: true,
+                environment: [
+                  { name: "BUCKET_NAME", value: bucketName },
+                  { name: "DYNAMO_TABLE", value: tableName },
+                  { name: "AWS_REGION", value: regionData.name },
+                  { name: "TASK_SIZE", value: size },
+                  { name: "CHUNK_SIZE_MB", value: size === "small" ? "5" : size === "medium" ? "10" : "20" },
+                ],
+                logConfiguration: {
+                  logDriver: "awslogs",
+                  options: {
+                    "awslogs-group": logGroupName,
+                    "awslogs-region": regionData.name,
+                    "awslogs-stream-prefix": `worker-${size}`,
+                  },
                 },
-              ],
-            },
-          ],
-        },
-      },
-    },
-    tags: { Environment: environment },
-  },
-  { dependsOn: [pipesPolicy] }
-);
+              },
+            ])
+        ),
+      tags: { Environment: environment, Size: size },
+    }
+  );
+}
 
 // =============================================================================
 // Outputs
@@ -330,6 +317,26 @@ export const queueUrl = queue.url;
 export const queueArn = queue.arn;
 export const clusterName = cluster.name;
 export const clusterArn = cluster.arn;
-export const taskDefinitionArn = taskDefinition.arn;
 export const fargateSecurityGroupId = fargateSg.id;
-export const subnetIds = defaultSubnets.then((s) => s.ids);
+export const subnetIds = configSubnetIds;
+export const dynamoTableName = ingestStateTable.name;
+export const dynamoTableArn = ingestStateTable.arn;
+export const workerRepoUrl = workerRepo.repositoryUrl;
+export const workerRepoArn = workerRepo.arn;
+export const logGroupName = logGroup.name;
+
+// Task Definition ARNs por tamaño
+export const taskDefinitionArns = {
+  small: taskDefinitions.small.arn,
+  medium: taskDefinitions.medium.arn,
+  large: taskDefinitions.large.arn,
+  xlarge: taskDefinitions.xlarge.arn,
+};
+
+// Task Definition families por tamaño (para Dagster Pipes)
+export const taskDefinitionFamilies = {
+  small: `${projectName}-task-small`,
+  medium: `${projectName}-task-medium`,
+  large: `${projectName}-task-large`,
+  xlarge: `${projectName}-task-xlarge`,
+};
