@@ -1,0 +1,6 @@
+encryptionsalt: v1:ieXUH/nV3sE=:v1:CIvftcdrRrhNwxLY:KYHDOyrwPtxWdtVRI89ZyDFl/gVaLw==
+config:
+  aws:region: us-east-1
+  dagster-poc-infra:environment: sand
+  dagster-poc-infra:vpcId: vpc-063bc9a57fb3fe72d
+  dagster-poc-infra:subnetIds: '["subnet-011694f92eaa64be2","subnet-0d975036880e8b19d"]'

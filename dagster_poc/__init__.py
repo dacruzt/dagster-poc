@@ -16,6 +16,7 @@ defs = Definitions(
             subnets=os.getenv("ECS_SUBNETS", "").split(",") if os.getenv("ECS_SUBNETS") else [],
             security_groups=os.getenv("ECS_SECURITY_GROUPS", "").split(",") if os.getenv("ECS_SECURITY_GROUPS") else [],
             log_group_name=os.getenv("ECS_LOG_GROUP_NAME", ""),
+            dynamo_table_name=os.getenv("DYNAMO_TABLE_NAME", ""),
             task_definition_small=os.getenv("ECS_TASK_DEFINITION_SMALL", ""),
             task_definition_medium=os.getenv("ECS_TASK_DEFINITION_MEDIUM", ""),
             task_definition_large=os.getenv("ECS_TASK_DEFINITION_LARGE", ""),

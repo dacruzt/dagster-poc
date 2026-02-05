@@ -10,6 +10,7 @@ class ECSResource(ConfigurableResource):
     subnets: list[str] = []
     security_groups: list[str] = []
     log_group_name: str = ""
+    dynamo_table_name: str = ""
 
     # Task definitions por tamaño
     task_definition_small: str = ""

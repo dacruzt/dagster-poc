@@ -78,6 +78,7 @@ def process_file_with_pipes(
                         {"name": "S3_BUCKET", "value": config.s3_bucket},
                         {"name": "S3_KEY", "value": config.s3_key},
                         {"name": "DAGSTER_RUN_ID", "value": context.run_id},
+                        {"name": "DYNAMO_TABLE", "value": ecs.dynamo_table_name},
                     ],
                 }
             ]
