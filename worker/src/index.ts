@@ -234,33 +234,95 @@ class FileProcessor {
     let bytesProcessed = 0;
     const batchSize = 1000;
     let batch: unknown[] = [];
+    let entireContent = "";
+    let isJsonArray = false;
 
+    // First, try to determine if this is a JSON array or JSONL
     for await (const { line } of this.s3Reader.streamLines(
       fileInfo.bucket,
       fileInfo.key
     )) {
-      bytesProcessed += Buffer.byteLength(line, "utf-8");
+      entireContent += line + "\n";
+    }
 
-      try {
-        const record = JSON.parse(line);
-        batch.push(record);
-        this.rowCount++;
+    bytesProcessed = Buffer.byteLength(entireContent, "utf-8");
 
-        if (batch.length >= batchSize) {
-          await this.processBatch(batch);
-          batch = [];
+    // Try parsing as JSON array first
+    try {
+      const parsed = JSON.parse(entireContent);
+      if (Array.isArray(parsed)) {
+        pipes.log(`Detected JSON array format with ${parsed.length} items`);
+        isJsonArray = true;
 
-          if (this.rowCount % 10000 === 0) {
-            pipes.reportProgress(
-              bytesProcessed,
-              fileInfo.size,
-              `Processed ${this.rowCount.toLocaleString()} records`
-            );
+        // Process array items
+        for (const record of parsed) {
+          batch.push(record);
+          this.rowCount++;
+
+          if (batch.length >= batchSize) {
+            await this.processBatch(batch);
+            batch = [];
+
+            if (this.rowCount % 10000 === 0) {
+              pipes.reportProgress(
+                this.rowCount,
+                parsed.length,
+                `Processed ${this.rowCount.toLocaleString()} records`
+              );
+
+              await this.stateManager.updateProgress(
+                state.pk,
+                state.sk,
+                this.rowCount,
+                parsed.length,
+                this.rowCount
+              );
+            }
           }
         }
-      } catch {
-        // Skip invalid JSON lines
-        pipes.log(`Skipping invalid JSON at position ${bytesProcessed}`, "warning");
+      } else {
+        // Single JSON object
+        pipes.log("Detected single JSON object");
+        batch.push(parsed);
+        this.rowCount++;
+      }
+    } catch {
+      // Not a JSON array, try JSONL format
+      pipes.log("Processing as JSON Lines format");
+      const lines = entireContent.split("\n");
+
+      for (const line of lines) {
+        const trimmedLine = line.trim();
+        if (!trimmedLine) continue;
+
+        try {
+          const record = JSON.parse(trimmedLine);
+          batch.push(record);
+          this.rowCount++;
+
+          if (batch.length >= batchSize) {
+            await this.processBatch(batch);
+            batch = [];
+
+            if (this.rowCount % 10000 === 0) {
+              pipes.reportProgress(
+                this.rowCount,
+                lines.length,
+                `Processed ${this.rowCount.toLocaleString()} records`
+              );
+
+              await this.stateManager.updateProgress(
+                state.pk,
+                state.sk,
+                this.rowCount,
+                lines.length,
+                this.rowCount
+              );
+            }
+          }
+        } catch {
+          // Skip invalid JSON lines silently for JSONL format
+        }
       }
     }
 
