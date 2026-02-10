@@ -357,8 +357,8 @@ const sftpEc2Role = new aws.iam.Role(`${projectName}-sftp-ec2-role`, {
 new aws.iam.RolePolicy(`${projectName}-sftp-ec2-policy`, {
   role: sftpEc2Role.id,
   policy: pulumi
-    .all([sftpUserPassword.arn, bucket.arn])
-    .apply(([secretArn, bucketArn]) =>
+    .all([sftpUserPassword.arn])
+    .apply(([secretArn]) =>
       JSON.stringify({
         Version: "2012-10-17",
         Statement: [
@@ -369,21 +369,16 @@ new aws.iam.RolePolicy(`${projectName}-sftp-ec2-policy`, {
             Resource: secretArn,
           },
           {
-            Sid: "WriteToS3Bucket",
+            Sid: "WriteToS3LandingBucket",
             Effect: "Allow",
             Action: ["s3:PutObject", "s3:PutObjectAcl"],
-            Resource: `${bucketArn}/board-files/*`,
+            Resource: "arn:aws:s3:::data-do-ent-file-ingestion-test-landing/*",
           },
           {
-            Sid: "ListS3Bucket",
+            Sid: "ListS3LandingBucket",
             Effect: "Allow",
             Action: ["s3:ListBucket"],
-            Resource: bucketArn,
-            Condition: {
-              StringLike: {
-                "s3:prefix": ["board-files/*"],
-              },
-            },
+            Resource: "arn:aws:s3:::data-do-ent-file-ingestion-test-landing",
           },
         ],
       })
@@ -454,7 +449,6 @@ const windowsAmi = aws.ec2.getAmi({
 // Función helper para generar el script PowerShell de User Data
 function generateUserData(
   secretName: string,
-  bucketName: string,
   regionName: string
 ): string {
   // Script de sincronización (se guarda como archivo separado en la instancia)
@@ -467,8 +461,8 @@ function generateUserData(
 \\$LandingPath = "C:\\\\SFTP\\\\BoardFiles\\\\Landing"
 \\$ArchivePath = "C:\\\\SFTP\\\\BoardFiles\\\\Archive"
 \\$LogPath = "C:\\\\SFTP\\\\Logs\\\\sync.log"
-\\$BucketName = "${bucketName}"
-\\$S3Prefix = "board-files"
+\\$BucketName = "data-do-ent-file-ingestion-test-landing"
+\\$S3Prefix = ""
 \\$AwsRegion = "${regionName}"
 
 function Write-SyncLog {
@@ -536,8 +530,12 @@ foreach (\\$file in \\$files) {
     }
 
     try {
-        \\$timestamp = Get-Date -Format "yyyy/MM/dd/HHmmss"
-        \\$s3Key = "\\$S3Prefix/\\$timestamp" + "_" + "\\$fileName"
+        \\$timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+        if ([string]::IsNullOrEmpty(\\$S3Prefix)) {
+            \\$s3Key = "\\$timestamp" + "_" + "\\$fileName"
+        } else {
+            \\$s3Key = "\\$S3Prefix/" + "\\$timestamp" + "_" + "\\$fileName"
+        }
         Write-SyncLog "Subiendo a s3://\\$BucketName/\\$s3Key"
         Write-S3Object -BucketName \\$BucketName -File \\$filePath -Key \\$s3Key -Region \\$AwsRegion
         \\$archiveFileName = (Get-Date -Format 'yyyyMMdd_HHmmss') + "_" + \\$fileName
@@ -692,7 +690,7 @@ Write-Log "- Carpeta Landing: C:\\\\SFTP\\\\BoardFiles\\\\Landing"
 Write-Log "- Carpeta Archive: C:\\\\SFTP\\\\BoardFiles\\\\Archive"
 Write-Log "- Script de sync: C:\\\\SFTP\\\\Scripts\\\\Sync-BoardFilesToS3.ps1"
 Write-Log "- Tarea programada: BoardFiles-S3-Sync (cada 5 min)"
-Write-Log "- Bucket S3: ${bucketName}/board-files/"
+Write-Log "- Bucket S3: data-do-ent-file-ingestion-test-curated/inbound/cebroker/"
 Write-Log "============================================="
 
 </powershell>
@@ -701,13 +699,12 @@ Write-Log "============================================="
 
 // User Data - PowerShell Script completo
 const userData = pulumi
-  .all([sftpUserPassword.name, bucket.id, region])
+  .all([sftpUserPassword.name, region])
   .apply(
-    ([secretName, bucketNameValue, regionData]: [
-      string,
+    ([secretName, regionData]: [
       string,
       aws.GetRegionResult,
-    ]) => generateUserData(secretName, bucketNameValue, regionData.name)
+    ]) => generateUserData(secretName, regionData.name)
   );
 
 // Instancia EC2 Windows Server 2022
