@@ -13,8 +13,8 @@ $ErrorActionPreference = "Continue"
 $LandingPath = "C:\SFTP\BoardFiles\Landing"
 $ArchivePath = "C:\SFTP\BoardFiles\Archive"
 $LogPath = "C:\SFTP\Logs\sync.log"
-$BucketName = "dagster-poc-sand-bucket-7a45862"  # <-- CAMBIAR POR TU BUCKET
-$S3Prefix = "inbound/cebroker"
+$BucketName = "data-do-ent-file-ingestion-test-landing"
+$S3Prefix = ""
 $AwsRegion = "us-east-1"
 
 # -----------------------------------------------------------------------------
@@ -139,7 +139,11 @@ foreach ($file in $files) {
     try {
         # Construir la key de S3 con timestamp
         $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-        $s3Key = "$S3Prefix/${timestamp}_$fileName"
+        if ([string]::IsNullOrEmpty($S3Prefix)) {
+            $s3Key = "${timestamp}_$fileName"
+        } else {
+            $s3Key = "$S3Prefix/${timestamp}_$fileName"
+        }
 
         Write-SyncLog "Subiendo a s3://$BucketName/$s3Key"
 
