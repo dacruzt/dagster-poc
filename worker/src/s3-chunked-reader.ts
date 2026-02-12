@@ -63,7 +63,7 @@ export class S3ChunkedReader {
   getRecommendedTaskSize(fileSizeBytes: number): string {
     const sizeMB = fileSizeBytes / (1024 * 1024);
 
-    if (sizeMB < 50) return "small";
+    if (sizeMB < 50) return "lambda";
     if (sizeMB < 200) return "medium";
     if (sizeMB < 500) return "large";
     return "xlarge";

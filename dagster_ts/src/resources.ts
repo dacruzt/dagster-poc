@@ -125,6 +125,29 @@ export class SQSResource {
   }
 }
 
+// ─── Lambda Resource ────────────────────────────────────────────
+
+export interface LambdaResourceConfig {
+  regionName?: string;
+  functionName: string;
+  logGroupName: string;
+  dynamoTableName: string;
+}
+
+export class LambdaResource {
+  readonly regionName: string;
+  readonly functionName: string;
+  readonly logGroupName: string;
+  readonly dynamoTableName: string;
+
+  constructor(config: LambdaResourceConfig) {
+    this.regionName = config.regionName ?? "us-east-1";
+    this.functionName = config.functionName;
+    this.logGroupName = config.logGroupName;
+    this.dynamoTableName = config.dynamoTableName;
+  }
+}
+
 // ─── S3 Resource ────────────────────────────────────────────────
 
 export interface S3ResourceConfig {
@@ -153,7 +176,7 @@ export class S3Resource {
   getRecommendedTaskSize(fileSizeBytes: number): string {
     const sizeMb = fileSizeBytes / (1024 * 1024);
 
-    if (sizeMb < 50) return "small";
+    if (sizeMb < 50) return "lambda";
     if (sizeMb < 200) return "medium";
     if (sizeMb < 500) return "large";
     return "xlarge";

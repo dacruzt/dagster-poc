@@ -27,12 +27,16 @@ const fargateSg = new aws.ec2.SecurityGroup(`${projectName}-fargate-sg`, {
 });
 
 // =============================================================================
-// S3 Bucket
+// S3 Bucket (internal, Pulumi-managed)
 // =============================================================================
 const bucket = new aws.s3.BucketV2(`${projectName}-bucket`, {
   forceDestroy: true,
   tags: { Environment: environment },
 });
+
+// External S3 bucket used for file ingestion (not Pulumi-managed)
+const externalBucketName = "data-do-ent-file-ingestion-test-landing";
+const externalBucketArn = `arn:aws:s3:::${externalBucketName}`;
 
 // =============================================================================
 // DynamoDB - Ingest State Table
@@ -83,7 +87,7 @@ const queue = new aws.sqs.Queue(`${projectName}-queue`, {
   tags: { Environment: environment },
 });
 
-// Policy para que S3 pueda enviar mensajes a SQS
+// Policy para que S3 pueda enviar mensajes a SQS (both internal and external buckets)
 const queuePolicy = new aws.sqs.QueuePolicy(`${projectName}-queue-policy`, {
   queueUrl: queue.id,
   policy: pulumi
@@ -97,18 +101,37 @@ const queuePolicy = new aws.sqs.QueuePolicy(`${projectName}-queue-policy`, {
             Principal: { Service: "s3.amazonaws.com" },
             Action: "sqs:SendMessage",
             Resource: queueArn,
-            Condition: { ArnEquals: { "aws:SourceArn": bucketArn } },
+            Condition: {
+              ArnEquals: {
+                "aws:SourceArn": [bucketArn, externalBucketArn],
+              },
+            },
           },
         ],
       })
     ),
 });
 
-// S3 → SQS notification
+// S3 → SQS notification (internal bucket)
 new aws.s3.BucketNotification(
   `${projectName}-bucket-notification`,
   {
     bucket: bucket.id,
+    queues: [
+      {
+        queueArn: queue.arn,
+        events: ["s3:ObjectCreated:*"],
+      },
+    ],
+  },
+  { dependsOn: [queuePolicy] }
+);
+
+// S3 → SQS notification (external bucket)
+new aws.s3.BucketNotification(
+  `${projectName}-external-bucket-notification`,
+  {
+    bucket: externalBucketName,
     queues: [
       {
         queueArn: queue.arn,
@@ -185,7 +208,7 @@ const taskRole = new aws.iam.Role(`${projectName}-task-role`, {
   }),
 });
 
-// Permisos para S3, DynamoDB y Dagster Pipes (CloudWatch)
+// Permisos para S3 (both buckets), DynamoDB y Dagster Pipes (CloudWatch)
 new aws.iam.RolePolicy(`${projectName}-task-policy`, {
   role: taskRole.id,
   policy: pulumi
@@ -202,7 +225,12 @@ new aws.iam.RolePolicy(`${projectName}-task-policy`, {
               "s3:ListBucket",
               "s3:HeadObject",
             ],
-            Resource: [bucketArn, `${bucketArn}/*`],
+            Resource: [
+              bucketArn,
+              `${bucketArn}/*`,
+              externalBucketArn,
+              `${externalBucketArn}/*`,
+            ],
           },
           {
             Effect: "Allow",
@@ -733,6 +761,100 @@ const sftpInstance = new aws.ec2.Instance(`${projectName}-sftp-server`, {
 });
 
 // =============================================================================
+// Lambda - Worker for small files (< 50 MB)
+// =============================================================================
+
+// Lambda Execution Role
+const lambdaRole = new aws.iam.Role(`${projectName}-lambda-role`, {
+  assumeRolePolicy: JSON.stringify({
+    Version: "2012-10-17",
+    Statement: [
+      {
+        Action: "sts:AssumeRole",
+        Principal: { Service: "lambda.amazonaws.com" },
+        Effect: "Allow",
+      },
+    ],
+  }),
+  tags: { Environment: environment },
+});
+
+// Basic Lambda execution policy (CloudWatch Logs)
+new aws.iam.RolePolicyAttachment(`${projectName}-lambda-basic-policy`, {
+  role: lambdaRole.name,
+  policyArn:
+    "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+});
+
+// Lambda permissions: S3 (both buckets) + DynamoDB
+new aws.iam.RolePolicy(`${projectName}-lambda-policy`, {
+  role: lambdaRole.id,
+  policy: pulumi
+    .all([bucket.arn, ingestStateTable.arn])
+    .apply(([bucketArn, tableArn]: [string, string]) =>
+      JSON.stringify({
+        Version: "2012-10-17",
+        Statement: [
+          {
+            Effect: "Allow",
+            Action: [
+              "s3:GetObject",
+              "s3:PutObject",
+              "s3:ListBucket",
+              "s3:HeadObject",
+            ],
+            Resource: [
+              bucketArn,
+              `${bucketArn}/*`,
+              externalBucketArn,
+              `${externalBucketArn}/*`,
+            ],
+          },
+          {
+            Effect: "Allow",
+            Action: [
+              "dynamodb:GetItem",
+              "dynamodb:PutItem",
+              "dynamodb:UpdateItem",
+              "dynamodb:Query",
+            ],
+            Resource: [tableArn, `${tableArn}/index/*`],
+          },
+        ],
+      })
+    ),
+});
+
+// Lambda Function for small file processing
+const workerLambda = new aws.lambda.Function(`${projectName}-worker-lambda`, {
+  runtime: "nodejs20.x",
+  handler: "lambda-handler.handler",
+  role: lambdaRole.arn,
+  timeout: 300, // 5 minutes
+  memorySize: 512, // 512 MB for files up to 50 MB
+  code: new pulumi.asset.AssetArchive({
+    ".": new pulumi.asset.FileArchive("../worker/dist"),
+  }),
+  environment: {
+    variables: ingestStateTable.name.apply((tableName) => ({
+      DYNAMO_TABLE: tableName,
+      TASK_SIZE: "lambda",
+    })),
+  },
+  tags: { Environment: environment },
+});
+
+// CloudWatch Log Group for Lambda (explicit for retention control)
+const lambdaLogGroup = new aws.cloudwatch.LogGroup(
+  `${projectName}-lambda-logs`,
+  {
+    name: pulumi.interpolate`/aws/lambda/${workerLambda.name}`,
+    retentionInDays: 14,
+    tags: { Environment: environment },
+  }
+);
+
+// =============================================================================
 // Outputs
 // =============================================================================
 export const bucketName = bucket.id;
@@ -764,6 +886,11 @@ export const taskDefinitionFamilies = {
   large: `${projectName}-task-large`,
   xlarge: `${projectName}-task-xlarge`,
 };
+
+// Lambda Outputs
+export const lambdaFunctionName = workerLambda.name;
+export const lambdaFunctionArn = workerLambda.arn;
+export const lambdaLogGroupName = lambdaLogGroup.name;
 
 // SFTP Server Outputs
 export const sftpServerInstanceId = sftpInstance.id;
