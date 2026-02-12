@@ -12,8 +12,10 @@
     "@aws-sdk/client-cloudwatch-logs": "^3.500.0",
     "@aws-sdk/client-ecs": "^3.500.0",
     "@aws-sdk/client-lambda": "^3.500.0",
+    "@aws-sdk/client-dynamodb": "^3.500.0",
     "@aws-sdk/client-s3": "^3.500.0",
     "@aws-sdk/client-sqs": "^3.500.0",
+    "@aws-sdk/lib-dynamodb": "^3.500.0",
     "express": "^5.2.1"
   },
   "devDependencies": {

@@ -11,15 +11,16 @@
 # =============================================================================
 
 BUCKET_NAME="data-do-ent-file-ingestion-test-landing"
-LAMBDA_ROLE_ARN="arn:aws:iam::114009992586:role/dagster-poc-sand-lambda-role-1f754a1"
-FARGATE_ROLE_ARN="arn:aws:iam::114009992586:role/dagster-poc-sand-task-role-52cbb29"
-SQS_QUEUE_ARN="arn:aws:sqs:us-east-1:114009992586:dagster-poc-sand-queue-ea9a5e1"
+DAGSTER_ACCOUNT_ID="114009992586"
+SQS_QUEUE_ARN="arn:aws:sqs:us-east-1:${DAGSTER_ACCOUNT_ID}:dagster-poc-sand-queue-ea9a5e1"
 
 echo "============================================="
 echo "Setting up cross-account access for: $BUCKET_NAME"
 echo "============================================="
 
 # Step 1: Apply bucket policy for cross-account S3 read access
+# Grants the entire Dagster account (114009992586) access so that
+# Lambda roles, Fargate roles, SSO users, and the sensor all work.
 echo ""
 echo "Step 1: Applying bucket policy..."
 
@@ -29,10 +30,10 @@ aws s3api put-bucket-policy \
     "Version": "2012-10-17",
     "Statement": [
       {
-        "Sid": "AllowDagsterLambdaRead",
+        "Sid": "AllowDagsterAccountRead",
         "Effect": "Allow",
         "Principal": {
-          "AWS": "'"$LAMBDA_ROLE_ARN"'"
+          "AWS": "arn:aws:iam::'"$DAGSTER_ACCOUNT_ID"':root"
         },
         "Action": [
           "s3:GetObject",
@@ -41,42 +42,12 @@ aws s3api put-bucket-policy \
         "Resource": "arn:aws:s3:::'"$BUCKET_NAME"'/*"
       },
       {
-        "Sid": "AllowDagsterLambdaListBucket",
+        "Sid": "AllowDagsterAccountListBucket",
         "Effect": "Allow",
         "Principal": {
-          "AWS": "'"$LAMBDA_ROLE_ARN"'"
+          "AWS": "arn:aws:iam::'"$DAGSTER_ACCOUNT_ID"':root"
         },
         "Action": "s3:ListBucket",
-        "Resource": "arn:aws:s3:::'"$BUCKET_NAME"'"
-      },
-      {
-        "Sid": "AllowDagsterFargateRead",
-        "Effect": "Allow",
-        "Principal": {
-          "AWS": "'"$FARGATE_ROLE_ARN"'"
-        },
-        "Action": [
-          "s3:GetObject",
-          "s3:HeadObject"
-        ],
-        "Resource": "arn:aws:s3:::'"$BUCKET_NAME"'/*"
-      },
-      {
-        "Sid": "AllowDagsterFargateListBucket",
-        "Effect": "Allow",
-        "Principal": {
-          "AWS": "'"$FARGATE_ROLE_ARN"'"
-        },
-        "Action": "s3:ListBucket",
-        "Resource": "arn:aws:s3:::'"$BUCKET_NAME"'"
-      },
-      {
-        "Sid": "AllowS3NotificationsToSQS",
-        "Effect": "Allow",
-        "Principal": {
-          "Service": "s3.amazonaws.com"
-        },
-        "Action": "s3:PutBucketNotificationConfiguration",
         "Resource": "arn:aws:s3:::'"$BUCKET_NAME"'"
       }
     ]

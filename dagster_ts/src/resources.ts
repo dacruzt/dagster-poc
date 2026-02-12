@@ -8,7 +8,11 @@ import {
   ReceiveMessageCommand,
   DeleteMessageCommand,
 } from "@aws-sdk/client-sqs";
-import { S3Client, HeadObjectCommand } from "@aws-sdk/client-s3";
+import {
+  S3Client,
+  HeadObjectCommand,
+  ListObjectsV2Command,
+} from "@aws-sdk/client-s3";
 
 // ─── ECS Resource ───────────────────────────────────────────────
 
@@ -171,6 +175,49 @@ export class S3Resource {
     const command = new HeadObjectCommand({ Bucket: bucket, Key: key });
     const response = await this.client.send(command);
     return response.ContentLength ?? 0;
+  }
+
+  async listObjects(bucket: string): Promise<
+    Array<{
+      key: string;
+      size: number;
+      etag: string;
+      lastModified: Date;
+    }>
+  > {
+    const objects: Array<{
+      key: string;
+      size: number;
+      etag: string;
+      lastModified: Date;
+    }> = [];
+
+    let continuationToken: string | undefined;
+
+    do {
+      const command = new ListObjectsV2Command({
+        Bucket: bucket,
+        ContinuationToken: continuationToken,
+      });
+      const response = await this.client.send(command);
+
+      for (const obj of response.Contents ?? []) {
+        if (obj.Key && obj.Size && obj.Size > 0) {
+          objects.push({
+            key: obj.Key,
+            size: obj.Size,
+            etag: obj.ETag ?? "",
+            lastModified: obj.LastModified ?? new Date(),
+          });
+        }
+      }
+
+      continuationToken = response.IsTruncated
+        ? response.NextContinuationToken
+        : undefined;
+    } while (continuationToken);
+
+    return objects;
   }
 
   getRecommendedTaskSize(fileSizeBytes: number): string {

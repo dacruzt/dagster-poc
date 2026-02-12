@@ -23,12 +23,14 @@ class LambdaProcessFileConfig(Config):
     s3_key: str
 
 
-def _stream_stderr(proc, context: OpExecutionContext):
+def _stream_stderr(proc, context: OpExecutionContext, error_lines: list):
     """Stream stderr from the TS process to Dagster logs in real-time."""
     for line in iter(proc.stderr.readline, ""):
         line = line.strip()
         if line:
             context.log.info(f"[TS] {line}")
+            if "[ERROR]" in line:
+                error_lines.append(line)
 
 
 @op(
@@ -60,7 +62,8 @@ def process_file_with_lambda(
     )
 
     # Stream stderr (logs) in a separate thread for real-time output
-    log_thread = threading.Thread(target=_stream_stderr, args=(proc, context))
+    error_lines = []
+    log_thread = threading.Thread(target=_stream_stderr, args=(proc, context, error_lines))
     log_thread.daemon = True
     log_thread.start()
 
@@ -74,7 +77,8 @@ def process_file_with_lambda(
     log_thread.join(timeout=5)
 
     if proc.returncode != 0:
-        raise Exception(f"lambda-cli failed with exit code {proc.returncode}")
+        error_detail = error_lines[-1] if error_lines else "See logs above for details"
+        raise Exception(f"lambda-cli failed (exit code {proc.returncode}): {error_detail}")
 
     # Parse result JSON from stdout
     result = json.loads(stdout.strip())

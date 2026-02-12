@@ -126,6 +126,7 @@ export async function processFileWithPipes(
   const maxWaitMs = 900_000; // 15 minutes
 
   let exitCode: number | null = null;
+  const workerErrors: string[] = [];
 
   while (taskRunning && Date.now() - startTime < maxWaitMs) {
     // Check task status
@@ -145,8 +146,9 @@ export async function processFileWithPipes(
         const stopReason = describedTasks[0].stoppedReason ?? "";
         const containers = describedTasks[0].containers ?? [];
 
-        if (containers.length > 0) {
-          exitCode = containers[0].exitCode ?? null;
+        const workerContainer = containers.find(c => c.name === "worker") ?? containers[0];
+        if (workerContainer) {
+          exitCode = workerContainer.exitCode ?? null;
         }
 
         logger.info(dash);
@@ -181,6 +183,9 @@ export async function processFileWithPipes(
         const message = (event.message ?? "").trim();
         if (message) {
           logger.info(`[WORKER] ${message}`);
+          if (message.includes("[ERROR")) {
+            workerErrors.push(message);
+          }
         }
       }
 
@@ -200,7 +205,7 @@ export async function processFileWithPipes(
     }
   }
 
-  // 5. Final log fetch
+  // 5. Final log fetch (re-fetch all to catch any missed error lines)
   await sleep(2000);
   try {
     const logResponse = await logsClient.send(
@@ -212,7 +217,8 @@ export async function processFileWithPipes(
     );
     for (const event of logResponse.events ?? []) {
       const message = (event.message ?? "").trim();
-      if (message && !lastLogToken) {
+      if (message && message.includes("[ERROR") && !workerErrors.includes(message)) {
+        workerErrors.push(message);
         logger.info(`[WORKER] ${message}`);
       }
     }
@@ -231,7 +237,8 @@ export async function processFileWithPipes(
   const finalTasks = finalResponse.tasks ?? [];
   if (finalTasks.length > 0) {
     const containers = finalTasks[0].containers ?? [];
-    exitCode = containers.length > 0 ? (containers[0].exitCode ?? null) : null;
+    const finalWorkerContainer = containers.find(c => c.name === "worker") ?? containers[0];
+    exitCode = finalWorkerContainer ? (finalWorkerContainer.exitCode ?? null) : null;
 
     logger.info(separator);
 
@@ -248,9 +255,12 @@ export async function processFileWithPipes(
         exitCode,
       };
     } else {
-      logger.error(`FARGATE TASK FAILED (exit code: ${exitCode})`);
+      const errorDetail = workerErrors.length > 0
+        ? workerErrors[workerErrors.length - 1]
+        : "See CloudWatch logs for details";
+      logger.error(`FARGATE TASK FAILED (exit code: ${exitCode}): ${errorDetail}`);
       logger.info(separator);
-      throw new Error(`Fargate task failed with exit code: ${exitCode}`);
+      throw new Error(`Fargate task failed (exit code ${exitCode}): ${errorDetail}`);
     }
   }
 

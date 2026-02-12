@@ -6,6 +6,11 @@
 import { pipes } from "./dagster-pipes";
 import { S3ChunkedReader, S3FileInfo, ChunkInfo } from "./s3-chunked-reader";
 import { DynamoStateManager, IngestState } from "./dynamo-state";
+import {
+  findSchema,
+  validateCsvColumns,
+  validateJsonFields,
+} from "./column-validator";
 
 export interface WorkerConfig {
   bucket: string;
@@ -70,10 +75,27 @@ export class FileProcessor {
         currentSize
       );
 
-      // 4. Update status to processing
+      // 4. Validate file structure
+      await this.stateManager.updateStatus(state.pk, state.sk, "VALIDATING");
+      pipes.log("Validating file structure...");
+
+      const schema = findSchema(config.key);
+      if (schema.requiredColumns.length > 0) {
+        pipes.log(`Schema matched: ${schema.requiredColumns.length} required columns`);
+        const validation = await this.validateFile(fileInfo, schema);
+        if (!validation.valid) {
+          const errorMsg = `Invalid file format: ${validation.errors.join("; ")}`;
+          throw new Error(errorMsg);
+        }
+        pipes.log("File structure validated successfully");
+      } else {
+        pipes.log("No schema matched, skipping validation");
+      }
+
+      // 5. Update status to processing
       await this.stateManager.updateStatus(state.pk, state.sk, "PROCESSING");
 
-      // 5. Process file in chunks
+      // 6. Process file in chunks
       pipes.log("Starting chunked processing...");
       const result = await this.processFileInChunks(fileInfo, state);
 
@@ -151,6 +173,86 @@ export class FileProcessor {
       // Generic binary processing
       return this.processBinary(fileInfo, state);
     }
+  }
+
+  /**
+   * Validate file structure against its schema.
+   * Reads only the header + first data row (CSV) or first record (JSON).
+   */
+  private async validateFile(
+    fileInfo: S3FileInfo,
+    schema: ReturnType<typeof findSchema>
+  ): Promise<{ valid: boolean; errors: string[] }> {
+    const contentType = fileInfo.contentType?.toLowerCase() || "";
+    const isCsv = contentType.includes("csv") || fileInfo.key.endsWith(".csv");
+    const isJson = contentType.includes("json") || fileInfo.key.endsWith(".json");
+
+    if (isCsv) {
+      let headers: string[] = [];
+      let firstRow: Record<string, string> = {};
+
+      for await (const { line, lineNumber } of this.s3Reader.streamLines(
+        fileInfo.bucket,
+        fileInfo.key
+      )) {
+        if (lineNumber === 1) {
+          headers = this.parseCsvLine(line);
+        } else if (lineNumber === 2) {
+          const values = this.parseCsvLine(line);
+          for (let i = 0; i < headers.length; i++) {
+            firstRow[headers[i]] = values[i] || "";
+          }
+          break;
+        }
+      }
+
+      if (headers.length === 0) {
+        return { valid: false, errors: ["CSV file is empty (no headers found)"] };
+      }
+
+      pipes.log(`CSV headers: ${headers.join(", ")}`);
+      return validateCsvColumns(headers, firstRow, schema);
+    }
+
+    if (isJson) {
+      let entireContent = "";
+      for await (const { line } of this.s3Reader.streamLines(
+        fileInfo.bucket,
+        fileInfo.key
+      )) {
+        entireContent += line + "\n";
+      }
+
+      let firstRecord: unknown = null;
+
+      try {
+        const parsed = JSON.parse(entireContent);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          firstRecord = parsed[0];
+        } else if (!Array.isArray(parsed)) {
+          firstRecord = parsed;
+        }
+      } catch {
+        // Try JSONL - first line
+        const firstLine = entireContent.split("\n").find((l) => l.trim());
+        if (firstLine) {
+          try {
+            firstRecord = JSON.parse(firstLine);
+          } catch {
+            return { valid: false, errors: ["Cannot parse JSON file"] };
+          }
+        }
+      }
+
+      if (!firstRecord) {
+        return { valid: false, errors: ["JSON file is empty (no records found)"] };
+      }
+
+      return validateJsonFields(firstRecord, schema);
+    }
+
+    // Binary files: skip validation
+    return { valid: true, errors: [] };
   }
 
   /**
