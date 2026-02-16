@@ -16,7 +16,7 @@ aws dynamodb put-item \
     "dataset_id": {"S": "default"},
     "schema_version": {"S": "1.0"},
     "compute_target": {"S": "LAMBDA"},
-    "allowed_extensions": {"L": [{"S": ".csv"}, {"S": ".json"}, {"S": ".xlsx"}]},
+    "allowed_extensions": {"L": [{"S": ".csv"}, {"S": ".json"}, {"S": ".xlsx"}, {"S": ".xls"}]},
     "description": {"S": "Default dataset configuration"},
     "gsi1pk": {"S": "DATASETS"},
     "gsi1sk": {"S": "__default__"}
