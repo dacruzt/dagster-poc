@@ -87,59 +87,102 @@ const queue = new aws.sqs.Queue(`${projectName}-queue`, {
   tags: { Environment: environment },
 });
 
-// Policy para que S3 pueda enviar mensajes a SQS (both internal and external buckets)
-const queuePolicy = new aws.sqs.QueuePolicy(`${projectName}-queue-policy`, {
-  queueUrl: queue.id,
-  policy: pulumi
-    .all([queue.arn, bucket.arn])
-    .apply(([queueArn, bucketArn]) =>
-      JSON.stringify({
-        Version: "2012-10-17",
-        Statement: [
-          {
-            Effect: "Allow",
-            Principal: { Service: "s3.amazonaws.com" },
-            Action: "sqs:SendMessage",
-            Resource: queueArn,
-            Condition: {
-              ArnEquals: {
-                "aws:SourceArn": [bucketArn, externalBucketArn],
-              },
-            },
-          },
-        ],
-      })
-    ),
+// =============================================================================
+// Raw SQS Queue (EventBridge Pipe source - receives raw S3 events)
+// =============================================================================
+const rawDlq = new aws.sqs.Queue(`${projectName}-raw-dlq`, {
+  messageRetentionSeconds: 1209600, // 14 días
+  tags: { Environment: environment },
 });
 
-// S3 → SQS notification (internal bucket)
+const rawQueue = new aws.sqs.Queue(`${projectName}-raw-queue`, {
+  visibilityTimeoutSeconds: 30, // Short - Pipe processes quickly
+  messageRetentionSeconds: 86400, // 1 día
+  redrivePolicy: rawDlq.arn.apply((arn) =>
+    JSON.stringify({
+      deadLetterTargetArn: arn,
+      maxReceiveCount: 3,
+    })
+  ),
+  tags: { Environment: environment },
+});
+
+// Policy: Allow S3 to send raw events to the raw queue
+const rawQueuePolicy = new aws.sqs.QueuePolicy(
+  `${projectName}-raw-queue-policy`,
+  {
+    queueUrl: rawQueue.id,
+    policy: pulumi
+      .all([rawQueue.arn, bucket.arn])
+      .apply(([rawQueueArn, bucketArn]) =>
+        JSON.stringify({
+          Version: "2012-10-17",
+          Statement: [
+            {
+              Sid: "AllowS3SendMessage",
+              Effect: "Allow",
+              Principal: { Service: "s3.amazonaws.com" },
+              Action: "sqs:SendMessage",
+              Resource: rawQueueArn,
+              Condition: {
+                ArnEquals: {
+                  "aws:SourceArn": [bucketArn, externalBucketArn],
+                },
+              },
+            },
+          ],
+        })
+      ),
+  }
+);
+
+// Policy: Allow EventBridge Pipes to send enriched messages to the existing queue
+const queuePolicy = new aws.sqs.QueuePolicy(`${projectName}-queue-policy`, {
+  queueUrl: queue.id,
+  policy: queue.arn.apply((queueArn) =>
+    JSON.stringify({
+      Version: "2012-10-17",
+      Statement: [
+        {
+          Sid: "AllowPipeSendMessage",
+          Effect: "Allow",
+          Principal: { Service: "pipes.amazonaws.com" },
+          Action: "sqs:SendMessage",
+          Resource: queueArn,
+        },
+      ],
+    })
+  ),
+});
+
+// S3 → raw SQS notification (internal bucket)
 new aws.s3.BucketNotification(
   `${projectName}-bucket-notification`,
   {
     bucket: bucket.id,
     queues: [
       {
-        queueArn: queue.arn,
+        queueArn: rawQueue.arn,
         events: ["s3:ObjectCreated:*"],
       },
     ],
   },
-  { dependsOn: [queuePolicy] }
+  { dependsOn: [rawQueuePolicy] }
 );
 
-// S3 → SQS notification (external bucket)
+// S3 → raw SQS notification (external bucket)
 new aws.s3.BucketNotification(
   `${projectName}-external-bucket-notification`,
   {
     bucket: externalBucketName,
     queues: [
       {
-        queueArn: queue.arn,
+        queueArn: rawQueue.arn,
         events: ["s3:ObjectCreated:*"],
       },
     ],
   },
-  { dependsOn: [queuePolicy] }
+  { dependsOn: [rawQueuePolicy] }
 );
 
 // =============================================================================
@@ -855,6 +898,160 @@ const lambdaLogGroup = new aws.cloudwatch.LogGroup(
 );
 
 // =============================================================================
+// Enrichment Lambda - EventBridge Pipe enrichment step
+// =============================================================================
+const enrichmentLambdaRole = new aws.iam.Role(
+  `${projectName}-enrichment-lambda-role`,
+  {
+    assumeRolePolicy: JSON.stringify({
+      Version: "2012-10-17",
+      Statement: [
+        {
+          Action: "sts:AssumeRole",
+          Principal: { Service: "lambda.amazonaws.com" },
+          Effect: "Allow",
+        },
+      ],
+    }),
+    tags: { Environment: environment },
+  }
+);
+
+new aws.iam.RolePolicyAttachment(
+  `${projectName}-enrichment-lambda-basic-policy`,
+  {
+    role: enrichmentLambdaRole.name,
+    policyArn:
+      "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+  }
+);
+
+new aws.iam.RolePolicy(`${projectName}-enrichment-lambda-policy`, {
+  role: enrichmentLambdaRole.id,
+  policy: ingestStateTable.arn.apply((tableArn) =>
+    JSON.stringify({
+      Version: "2012-10-17",
+      Statement: [
+        {
+          Effect: "Allow",
+          Action: ["dynamodb:GetItem", "dynamodb:Query"],
+          Resource: [tableArn, `${tableArn}/index/*`],
+        },
+      ],
+    })
+  ),
+});
+
+const enrichmentLambda = new aws.lambda.Function(
+  `${projectName}-enrichment-lambda`,
+  {
+    runtime: "nodejs20.x",
+    handler: "enrichment-handler.handler",
+    role: enrichmentLambdaRole.arn,
+    timeout: 30,
+    memorySize: 128,
+    code: new pulumi.asset.AssetArchive({
+      ".": new pulumi.asset.FileArchive("../worker/dist"),
+    }),
+    environment: {
+      variables: ingestStateTable.name.apply((tableName) => ({
+        DYNAMO_TABLE: tableName,
+      })),
+    },
+    tags: { Environment: environment },
+  }
+);
+
+const enrichmentLambdaLogGroup = new aws.cloudwatch.LogGroup(
+  `${projectName}-enrichment-lambda-logs`,
+  {
+    name: pulumi.interpolate`/aws/lambda/${enrichmentLambda.name}`,
+    retentionInDays: 14,
+    tags: { Environment: environment },
+  }
+);
+
+// =============================================================================
+// EventBridge Pipe - Intelligent Gatekeeper
+// =============================================================================
+const pipeRole = new aws.iam.Role(`${projectName}-pipe-role`, {
+  assumeRolePolicy: JSON.stringify({
+    Version: "2012-10-17",
+    Statement: [
+      {
+        Action: "sts:AssumeRole",
+        Principal: { Service: "pipes.amazonaws.com" },
+        Effect: "Allow",
+      },
+    ],
+  }),
+  tags: { Environment: environment },
+});
+
+new aws.iam.RolePolicy(`${projectName}-pipe-policy`, {
+  role: pipeRole.id,
+  policy: pulumi
+    .all([rawQueue.arn, queue.arn, enrichmentLambda.arn])
+    .apply(([rawQueueArn, queueArn, enrichmentLambdaArn]) =>
+      JSON.stringify({
+        Version: "2012-10-17",
+        Statement: [
+          {
+            Sid: "SourceSQSPermissions",
+            Effect: "Allow",
+            Action: [
+              "sqs:ReceiveMessage",
+              "sqs:DeleteMessage",
+              "sqs:GetQueueAttributes",
+            ],
+            Resource: rawQueueArn,
+          },
+          {
+            Sid: "EnrichmentLambdaPermissions",
+            Effect: "Allow",
+            Action: "lambda:InvokeFunction",
+            Resource: enrichmentLambdaArn,
+          },
+          {
+            Sid: "TargetSQSPermissions",
+            Effect: "Allow",
+            Action: "sqs:SendMessage",
+            Resource: queueArn,
+          },
+        ],
+      })
+    ),
+});
+
+const gatekeeperPipe = new aws.pipes.Pipe(
+  `${projectName}-gatekeeper-pipe`,
+  {
+    name: `${projectName}-gatekeeper-pipe`,
+    roleArn: pipeRole.arn,
+    source: rawQueue.arn,
+    target: queue.arn,
+    description:
+      "Intelligent Gatekeeper: filters and enriches S3 events before Dagster processing",
+    desiredState: "RUNNING",
+
+    sourceParameters: {
+      sqsQueueParameters: {
+        batchSize: 10,
+        maximumBatchingWindowInSeconds: 5,
+      },
+    },
+
+    enrichment: enrichmentLambda.arn,
+    enrichmentParameters: {
+      inputTemplate: '{"s3_event": <$.body>}',
+    },
+
+    tags: { Environment: environment },
+  },
+  { dependsOn: [rawQueuePolicy, queuePolicy] }
+);
+
+// =============================================================================
 // Outputs
 // =============================================================================
 export const bucketName = bucket.id;
@@ -899,3 +1096,10 @@ export const sftpServerPrivateIp = sftpInstance.privateIp;
 export const sftpSecurityGroupId = sftpSg.id;
 export const sftpPasswordSecretArn = sftpUserPassword.arn;
 export const sftpPasswordSecretName = sftpUserPassword.name;
+
+// Gatekeeper Pipe Outputs
+export const rawQueueUrl = rawQueue.url;
+export const rawQueueArn = rawQueue.arn;
+export const enrichmentLambdaFunctionName = enrichmentLambda.name;
+export const enrichmentLambdaFunctionArn = enrichmentLambda.arn;
+export const gatekeeperPipeArn = gatekeeperPipe.arn;

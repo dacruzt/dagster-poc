@@ -27,18 +27,50 @@ export interface SensorOptions {
   intervalMs?: number;
 }
 
-/**
- * Parse S3 event records from an SQS message body.
- */
-function parseS3Records(body: string): Array<{
+interface EnrichmentData {
+  registered: boolean;
+  dataset_id?: string;
+  schema_version?: string;
+  compute_target?: "LAMBDA" | "FARGATE";
+}
+
+interface ParsedRecord {
   bucket: string;
   key: string;
   size: number;
   etag: string;
-}> {
-  const parsed = JSON.parse(body);
-  const records: Array<{ bucket: string; key: string; size: number; etag: string }> = [];
+  enrichment_data?: EnrichmentData;
+}
 
+/**
+ * Parse S3 event records from an SQS message body.
+ * Supports both raw S3 events and enriched events from EventBridge Pipe.
+ */
+function parseS3Records(body: string): ParsedRecord[] {
+  const parsed = JSON.parse(body);
+  const records: ParsedRecord[] = [];
+
+  // Enriched event from EventBridge Pipe
+  if (parsed.original_event && parsed.enrichment_data) {
+    const enrichment_data = parsed.enrichment_data as EnrichmentData;
+    const s3Event = parsed.original_event;
+
+    for (const record of s3Event.Records ?? []) {
+      const s3Info = record.s3 ?? {};
+      const bucket = s3Info.bucket?.name;
+      const key = s3Info.object?.key;
+      const size = s3Info.object?.size ?? 0;
+      const etag = s3Info.object?.eTag ?? "";
+
+      if (bucket && key) {
+        records.push({ bucket, key, size, etag, enrichment_data });
+      }
+    }
+
+    return records;
+  }
+
+  // Raw S3 event format (backward compatibility)
   for (const record of parsed.Records ?? []) {
     const s3Info = record.s3 ?? {};
     const bucket = s3Info.bucket?.name;
@@ -74,11 +106,30 @@ export async function pollSensor(options: SensorOptions): Promise<RunRequest[]> 
       const s3Records = parseS3Records(message.Body);
 
       for (const record of s3Records) {
+        // Skip unregistered files from enrichment
+        if (record.enrichment_data && !record.enrichment_data.registered) {
+          logger.info(`Skipping unregistered file: s3://${record.bucket}/${record.key}`);
+          continue;
+        }
+
         logger.info(`File detected: s3://${record.bucket}/${record.key}`);
         logger.info(`File size: ${(record.size / (1024 * 1024)).toFixed(2)} MB`);
 
-        const taskSize = s3.getRecommendedTaskSize(record.size);
+        // Use compute_target from enrichment if available, otherwise size-based
+        let taskSize: string;
+        if (record.enrichment_data?.compute_target) {
+          taskSize = record.enrichment_data.compute_target === "LAMBDA"
+            ? "lambda"
+            : s3.getRecommendedTaskSize(record.size);
+          logger.info(`Compute target from registry: ${record.enrichment_data.compute_target}`);
+        } else {
+          taskSize = s3.getRecommendedTaskSize(record.size);
+        }
         logger.info(`Recommended task size: ${taskSize}`);
+
+        if (record.enrichment_data) {
+          logger.info(`Dataset: ${record.enrichment_data.dataset_id} (schema v${record.enrichment_data.schema_version})`);
+        }
 
         runRequests.push({
           runKey: `${record.bucket}/${record.key}/${record.etag}`,
@@ -92,6 +143,12 @@ export async function pollSensor(options: SensorOptions): Promise<RunRequest[]> 
             s3_key: record.key,
             file_size_mb: String(Math.round((record.size / (1024 * 1024)) * 100) / 100),
             task_size: taskSize,
+            ...(record.enrichment_data?.dataset_id && {
+              dataset_id: record.enrichment_data.dataset_id,
+            }),
+            ...(record.enrichment_data?.schema_version && {
+              schema_version: record.enrichment_data.schema_version,
+            }),
           },
         });
       }
