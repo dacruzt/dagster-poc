@@ -1,9 +1,7 @@
 /**
- * Column Validator - Validates file structure against configurable schemas.
- * Schemas are defined in schemas.json and matched by filename pattern.
+ * Column Validator - Validates file structure against schemas.
+ * Schemas are provided by the caller (loaded from DynamoDB dataset configs).
  */
-
-import schemasConfig from "./schemas.json";
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -13,44 +11,12 @@ export interface ColumnDef {
 }
 
 export interface FileSchema {
-  pattern: string;
   requiredColumns: ColumnDef[];
 }
 
 export interface ValidationResult {
   valid: boolean;
   errors: string[];
-}
-
-// ─── Schema Matching ────────────────────────────────────────────
-
-/**
- * Match a glob-like pattern against a filename.
- * Supports: *.csv, *.json, exact names, prefix_*.csv
- */
-function matchPattern(pattern: string, filename: string): boolean {
-  // Extract just the filename from a full S3 key
-  const basename = filename.split("/").pop() || filename;
-
-  const escaped = pattern
-    .replace(/[.+^${}()|[\]\\]/g, "\\$&")
-    .replace(/\*/g, ".*")
-    .replace(/\?/g, ".");
-
-  return new RegExp(`^${escaped}$`, "i").test(basename);
-}
-
-/**
- * Find the schema that matches the given S3 key.
- * Returns defaultSchema if no pattern matches.
- */
-export function findSchema(s3Key: string): { requiredColumns: ColumnDef[] } {
-  for (const schema of schemasConfig.schemas) {
-    if (matchPattern(schema.pattern, s3Key)) {
-      return schema as { requiredColumns: ColumnDef[] };
-    }
-  }
-  return schemasConfig.defaultSchema as { requiredColumns: ColumnDef[] };
 }
 
 // ─── Validators ─────────────────────────────────────────────────

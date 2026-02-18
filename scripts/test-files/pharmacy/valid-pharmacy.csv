@@ -1,0 +1,4 @@
+date,pharmacy_license,state,pharmacist_name,dea_number,status
+2024-06-01,PH-200001,FL,Ana Martinez,DEA-FM1234567,active
+2024-06-15,PH-200002,CA,Roberto Chen,DEA-BC7654321,active
+2024-07-01,PH-200003,TX,Laura Gomez,DEA-AG9876543,expired

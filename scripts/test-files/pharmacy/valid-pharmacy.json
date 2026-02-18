@@ -1,0 +1,5 @@
+[
+  {"date": "2024-06-01", "pharmacy_license": "PH-200001", "state": "FL", "pharmacist_name": "Ana Martinez", "dea_number": "DEA-FM1234567", "status": "active"},
+  {"date": "2024-06-15", "pharmacy_license": "PH-200002", "state": "CA", "pharmacist_name": "Roberto Chen", "dea_number": "DEA-BC7654321", "status": "active"},
+  {"date": "2024-07-01", "pharmacy_license": "PH-200003", "state": "TX", "pharmacist_name": "Laura Gomez", "dea_number": "DEA-AG9876543", "status": "expired"}
+]

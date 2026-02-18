@@ -3,15 +3,17 @@
  *
  * Receives batched S3 event records from the Pipe.
  * For each event:
- *   1. Queries DynamoDB for DATASET#__default__ CONFIG record
- *   2. Appends enrichment_data to the event
- *   3. Returns the enriched event
+ *   1. Extracts the folder from the S3 key
+ *   2. Queries DynamoDB for the folder-specific DATASET#{folder} CONFIG record
+ *   3. Validates file structure against the dataset's schema
+ *   4. Appends enrichment_data to the event
+ *   5. Returns the enriched event
  */
 
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, GetCommand } from "@aws-sdk/lib-dynamodb";
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
-import { findSchema, validateCsvColumns, validateJsonFields } from "./column-validator";
+import { validateCsvColumns, validateJsonFields } from "./column-validator";
 
 // --- Types ---
 
@@ -30,6 +32,11 @@ interface PipeEnrichmentInput {
   s3_event: S3Event;
 }
 
+interface ColumnDef {
+  name: string;
+  type: "string" | "date" | "number";
+}
+
 interface DatasetConfig {
   pk: string;
   sk: string;
@@ -37,6 +44,7 @@ interface DatasetConfig {
   schema_version: string;
   compute_target: "LAMBDA" | "FARGATE";
   allowed_extensions: string[];
+  required_columns: ColumnDef[];
   description?: string;
 }
 
@@ -56,32 +64,38 @@ interface EnrichedOutput {
 
 // --- Globals (reused across invocations in warm Lambda) ---
 
-const tableName = process.env.DYNAMO_TABLE!;
+const configTableName = process.env.CONFIG_TABLE!;
 const dynamoClient = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(dynamoClient);
 const s3Client = new S3Client({});
 
-let cachedConfig: DatasetConfig | undefined;
+const configCache = new Map<string, DatasetConfig>();
 
-async function getDefaultConfig(): Promise<DatasetConfig | null> {
-  if (cachedConfig) {
-    return cachedConfig;
+function extractFolder(s3Key: string): string | null {
+  const firstSlash = s3Key.indexOf("/");
+  if (firstSlash === -1) return null;
+  return s3Key.substring(0, firstSlash);
+}
+
+async function getConfigForFolder(folder: string): Promise<DatasetConfig | null> {
+  if (configCache.has(folder)) {
+    return configCache.get(folder)!;
   }
 
   try {
     const result = await docClient.send(
       new GetCommand({
-        TableName: tableName,
-        Key: { pk: "DATASET#__default__", sk: "CONFIG" },
+        TableName: configTableName,
+        Key: { pk: `DATASET#${folder}`, sk: "CONFIG" },
       })
     );
     const config = result.Item as DatasetConfig | undefined;
     if (config) {
-      cachedConfig = config;
+      configCache.set(folder, config);
     }
     return config || null;
   } catch (error) {
-    console.error("Error querying dataset config:", error);
+    console.error(`Error querying config for folder "${folder}":`, error);
     return null;
   }
 }
@@ -105,13 +119,12 @@ function isExtensionAllowed(s3Key: string, allowedExtensions: string[]): boolean
  */
 async function validateFileStructure(
   bucket: string,
-  key: string
+  key: string,
+  schema: { requiredColumns: ColumnDef[] }
 ): Promise<{ valid: boolean; error?: string }> {
   try {
-    const schema = findSchema(key);
-
-    // Skip validation if no schema matched
-    if (!schema || schema.requiredColumns.length === 0) {
+    // Skip validation if no required columns defined
+    if (!schema.requiredColumns || schema.requiredColumns.length === 0) {
       return { valid: true };
     }
 
@@ -247,7 +260,6 @@ function parseCsvLine(line: string): string[] {
 export async function handler(events: PipeEnrichmentInput[]): Promise<EnrichedOutput[]> {
   console.log(`Enrichment handler invoked with ${events.length} events`);
 
-  const config = await getDefaultConfig();
   const results: EnrichedOutput[] = [];
 
   for (const event of events) {
@@ -277,8 +289,20 @@ export async function handler(events: PipeEnrichmentInput[]): Promise<EnrichedOu
         continue;
       }
 
+      // Extract folder from S3 key for config routing
+      const folder = extractFolder(s3Key);
+      if (!folder) {
+        console.log(`File "${s3Key}" is not in a recognized folder`);
+        results.push({
+          original_event: s3Event,
+          enrichment_data: { registered: false },
+        });
+        continue;
+      }
+
+      const config = await getConfigForFolder(folder);
       if (!config) {
-        console.log("No default dataset config found");
+        console.log(`No dataset config found for folder "${folder}"`);
         results.push({
           original_event: s3Event,
           enrichment_data: { registered: false },
@@ -287,7 +311,7 @@ export async function handler(events: PipeEnrichmentInput[]): Promise<EnrichedOu
       }
 
       if (!isExtensionAllowed(s3Key, config.allowed_extensions)) {
-        console.log(`Extension not allowed for "${s3Key}"`);
+        console.log(`Extension not allowed for "${s3Key}" in dataset "${config.dataset_id}"`);
         results.push({
           original_event: s3Event,
           enrichment_data: { registered: false },
@@ -295,11 +319,12 @@ export async function handler(events: PipeEnrichmentInput[]): Promise<EnrichedOu
         continue;
       }
 
-      // ✅ NEW: Validate file structure (header/columns) before allowing through
-      console.log(`Validating file structure for "${s3Key}"...`);
+      // Validate file structure against the dataset's schema
+      console.log(`Validating file structure for "${s3Key}" against dataset "${config.dataset_id}"...`);
       const structureValidation = await validateFileStructure(
         record.s3.bucket.name,
-        s3Key
+        s3Key,
+        { requiredColumns: config.required_columns }
       );
 
       if (!structureValidation.valid) {
@@ -315,7 +340,7 @@ export async function handler(events: PipeEnrichmentInput[]): Promise<EnrichedOu
         continue;
       }
 
-      console.log(`✅ File validated successfully: dataset_id=${config.dataset_id}, compute_target=${config.compute_target}`);
+      console.log(`File validated: dataset_id=${config.dataset_id}, folder=${folder}, compute_target=${config.compute_target}`);
 
       results.push({
         original_event: s3Event,

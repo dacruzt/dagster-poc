@@ -1,21 +1,23 @@
 # =============================================================================
-# Sync-BoardFilesToS3.ps1 - CE Broker Board Files Sync Script
+# Sync-BoardFilesToS3.ps1 - Multi-Folder Board Files Sync Script
 # =============================================================================
-# Este script sincroniza archivos desde la carpeta Landing hacia S3
-# y los mueve a Archive después de subirlos exitosamente.
+# Este script sincroniza archivos desde subfolders de Landing hacia S3,
+# manteniendo la misma estructura de folders en el bucket.
+# Cada subfolder (board-files, nursing-files, pharmacy) se sube al mismo
+# prefijo en S3.
 # =============================================================================
 
 $ErrorActionPreference = "Continue"
 
 # -----------------------------------------------------------------------------
-# CONFIGURACION - Modificar según el ambiente
+# CONFIGURACION - Modificar segun el ambiente
 # -----------------------------------------------------------------------------
-$LandingPath = "C:\SFTP\BoardFiles\Landing"
-$ArchivePath = "C:\SFTP\BoardFiles\Archive"
+$BaseLandingPath = "C:\SFTP\BoardFiles\Landing"
+$BaseArchivePath = "C:\SFTP\BoardFiles\Archive"
 $LogPath = "C:\SFTP\Logs\sync.log"
 $BucketName = "data-do-ent-file-ingestion-test-landing"
-$S3Prefix = ""
 $AwsRegion = "us-east-1"
+$DatasetFolders = @("board-files", "nursing-files", "pharmacy")
 
 # -----------------------------------------------------------------------------
 # FUNCIONES
@@ -33,7 +35,7 @@ function Write-SyncLog {
     # Escribir al archivo de log
     Add-Content -Path $LogPath -Value $logMessage -Force
 
-    # También escribir al Event Log de Windows
+    # Tambien escribir al Event Log de Windows
     $source = "BoardFileSync"
     if (-not [System.Diagnostics.EventLog]::SourceExists($source)) {
         try {
@@ -84,106 +86,107 @@ function Get-FileStableSize {
 # -----------------------------------------------------------------------------
 
 Write-SyncLog "=========================================="
-Write-SyncLog "Iniciando sincronizacion de archivos..."
+Write-SyncLog "Iniciando sincronizacion multi-folder..."
 Write-SyncLog "Bucket: $BucketName"
-Write-SyncLog "Prefix: $S3Prefix"
+Write-SyncLog "Folders: $($DatasetFolders -join ', ')"
 Write-SyncLog "=========================================="
 
-# Verificar que las carpetas existen
-if (-not (Test-Path $LandingPath)) {
-    Write-SyncLog "ERROR: Carpeta Landing no existe: $LandingPath" -Level "ERROR"
-    exit 1
-}
+$totalSuccess = 0
+$totalErrors = 0
+$totalSkipped = 0
 
-if (-not (Test-Path $ArchivePath)) {
-    Write-SyncLog "Creando carpeta Archive: $ArchivePath"
-    New-Item -ItemType Directory -Path $ArchivePath -Force | Out-Null
-}
+foreach ($datasetFolder in $DatasetFolders) {
+    $landingPath = Join-Path $BaseLandingPath $datasetFolder
+    $archivePath = Join-Path $BaseArchivePath $datasetFolder
 
-# Obtener lista de archivos
-$files = Get-ChildItem -Path $LandingPath -File -ErrorAction SilentlyContinue
+    # Crear carpetas si no existen
+    if (-not (Test-Path $landingPath)) {
+        New-Item -ItemType Directory -Path $landingPath -Force | Out-Null
+        Write-SyncLog "Carpeta Landing creada: $landingPath"
+    }
+    if (-not (Test-Path $archivePath)) {
+        New-Item -ItemType Directory -Path $archivePath -Force | Out-Null
+        Write-SyncLog "Carpeta Archive creada: $archivePath"
+    }
 
-if ($files.Count -eq 0) {
-    Write-SyncLog "No hay archivos nuevos para procesar"
-    exit 0
-}
+    # Obtener lista de archivos
+    $files = Get-ChildItem -Path $landingPath -File -ErrorAction SilentlyContinue
 
-Write-SyncLog "Encontrados $($files.Count) archivos para procesar"
-
-$successCount = 0
-$errorCount = 0
-$skippedCount = 0
-
-foreach ($file in $files) {
-    $filePath = $file.FullName
-    $fileName = $file.Name
-
-    Write-SyncLog "----------------------------------------"
-    Write-SyncLog "Procesando: $fileName"
-    Write-SyncLog "Tamano: $([math]::Round($file.Length / 1MB, 2)) MB"
-
-    # Verificar que el archivo no está bloqueado
-    if (-not (Test-FileNotLocked -FilePath $filePath)) {
-        Write-SyncLog "Archivo bloqueado (en uso), omitiendo: $fileName" -Level "WARN"
-        $skippedCount++
+    if ($files.Count -eq 0) {
         continue
     }
 
-    # Verificar que el archivo no está siendo transferido
-    if (-not (Get-FileStableSize -FilePath $filePath -WaitSeconds 3)) {
-        Write-SyncLog "Archivo aun en transferencia (tamano cambiando), omitiendo: $fileName" -Level "WARN"
-        $skippedCount++
-        continue
-    }
+    Write-SyncLog "[$datasetFolder] Encontrados $($files.Count) archivos para procesar"
 
-    try {
-        # Construir la key de S3 con timestamp
-        $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-        if ([string]::IsNullOrEmpty($S3Prefix)) {
-            $s3Key = "${timestamp}_$fileName"
-        } else {
-            $s3Key = "$S3Prefix/${timestamp}_$fileName"
+    foreach ($file in $files) {
+        $filePath = $file.FullName
+        $fileName = $file.Name
+
+        Write-SyncLog "[$datasetFolder] Procesando: $fileName ($([math]::Round($file.Length / 1MB, 2)) MB)"
+
+        # Verificar que el archivo no esta bloqueado
+        if (-not (Test-FileNotLocked -FilePath $filePath)) {
+            Write-SyncLog "[$datasetFolder] Archivo bloqueado, omitiendo: $fileName" -Level "WARN"
+            $totalSkipped++
+            continue
         }
 
-        Write-SyncLog "Subiendo a s3://$BucketName/$s3Key"
+        # Verificar que el archivo no esta siendo transferido
+        if (-not (Get-FileStableSize -FilePath $filePath -WaitSeconds 3)) {
+            Write-SyncLog "[$datasetFolder] Archivo en transferencia, omitiendo: $fileName" -Level "WARN"
+            $totalSkipped++
+            continue
+        }
 
-        # Subir a S3
-        Write-S3Object -BucketName $BucketName -File $filePath -Key $s3Key -Region $AwsRegion
+        try {
+            # S3 key: {folder}/{timestamp}_{filename}
+            $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+            $s3Key = "$datasetFolder/${timestamp}_$fileName"
 
-        Write-SyncLog "Archivo subido exitosamente a S3"
+            Write-SyncLog "[$datasetFolder] Subiendo a s3://$BucketName/$s3Key"
 
-        # Mover a Archive
-        $archiveFileName = "${timestamp}_$fileName"
-        $archiveDest = Join-Path $ArchivePath $archiveFileName
-        Move-Item -Path $filePath -Destination $archiveDest -Force
+            # Subir a S3
+            Write-S3Object -BucketName $BucketName -File $filePath -Key $s3Key -Region $AwsRegion
 
-        Write-SyncLog "Archivo movido a Archive: $archiveFileName"
-        $successCount++
+            Write-SyncLog "[$datasetFolder] Archivo subido exitosamente a S3"
 
-    } catch {
-        Write-SyncLog "ERROR procesando $fileName : $($_.Exception.Message)" -Level "ERROR"
-        $errorCount++
+            # Mover a Archive
+            $archiveFileName = "${timestamp}_$fileName"
+            $archiveDest = Join-Path $archivePath $archiveFileName
+            Move-Item -Path $filePath -Destination $archiveDest -Force
+
+            Write-SyncLog "[$datasetFolder] Archivo movido a Archive: $archiveFileName"
+            $totalSuccess++
+
+        } catch {
+            Write-SyncLog "[$datasetFolder] ERROR procesando $fileName : $($_.Exception.Message)" -Level "ERROR"
+            $totalErrors++
+        }
     }
 }
 
 Write-SyncLog "=========================================="
 Write-SyncLog "Sincronizacion completada"
-Write-SyncLog "  - Exitosos: $successCount"
-Write-SyncLog "  - Errores: $errorCount"
-Write-SyncLog "  - Omitidos: $skippedCount"
+Write-SyncLog "  - Exitosos: $totalSuccess"
+Write-SyncLog "  - Errores: $totalErrors"
+Write-SyncLog "  - Omitidos: $totalSkipped"
 Write-SyncLog "=========================================="
 
 # -----------------------------------------------------------------------------
-# LIMPIEZA DE ARCHIVOS ANTIGUOS (mas de 30 dias)
+# LIMPIEZA DE ARCHIVOS ANTIGUOS (mas de 30 dias) en todos los folders
 # -----------------------------------------------------------------------------
 $cutoffDate = (Get-Date).AddDays(-30)
-$oldFiles = Get-ChildItem -Path $ArchivePath -File | Where-Object { $_.LastWriteTime -lt $cutoffDate }
-
-if ($oldFiles.Count -gt 0) {
-    Write-SyncLog "Limpiando $($oldFiles.Count) archivos antiguos del Archive..."
-    foreach ($oldFile in $oldFiles) {
-        Write-SyncLog "Eliminando archivo antiguo: $($oldFile.Name)"
-        Remove-Item $oldFile.FullName -Force
+foreach ($datasetFolder in $DatasetFolders) {
+    $archivePath = Join-Path $BaseArchivePath $datasetFolder
+    if (Test-Path $archivePath) {
+        $oldFiles = Get-ChildItem -Path $archivePath -File | Where-Object { $_.LastWriteTime -lt $cutoffDate }
+        if ($oldFiles.Count -gt 0) {
+            Write-SyncLog "[$datasetFolder] Limpiando $($oldFiles.Count) archivos antiguos del Archive..."
+            foreach ($oldFile in $oldFiles) {
+                Write-SyncLog "[$datasetFolder] Eliminando: $($oldFile.Name)"
+                Remove-Item $oldFile.FullName -Force
+            }
+        }
     }
 }
 

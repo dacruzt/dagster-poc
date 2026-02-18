@@ -39,6 +39,24 @@ const externalBucketName = "data-do-ent-file-ingestion-test-landing";
 const externalBucketArn = `arn:aws:s3:::${externalBucketName}`;
 
 // =============================================================================
+// DynamoDB - Dataset Config Table
+// =============================================================================
+const datasetConfigTable = new aws.dynamodb.Table(
+  `${projectName}-dataset-config`,
+  {
+    name: `${projectName}-dataset-config`,
+    billingMode: "PAY_PER_REQUEST",
+    hashKey: "pk",
+    rangeKey: "sk",
+    attributes: [
+      { name: "pk", type: "S" },
+      { name: "sk", type: "S" },
+    ],
+    tags: { Environment: environment },
+  }
+);
+
+// =============================================================================
 // DynamoDB - Ingest State Table
 // =============================================================================
 const ingestStateTable = new aws.dynamodb.Table(`${projectName}-ingest-state`, {
@@ -170,20 +188,8 @@ new aws.s3.BucketNotification(
   { dependsOn: [rawQueuePolicy] }
 );
 
-// S3 → raw SQS notification (external bucket)
-new aws.s3.BucketNotification(
-  `${projectName}-external-bucket-notification`,
-  {
-    bucket: externalBucketName,
-    queues: [
-      {
-        queueArn: rawQueue.arn,
-        events: ["s3:ObjectCreated:*"],
-      },
-    ],
-  },
-  { dependsOn: [rawQueuePolicy] }
-);
+// NOTE: External bucket notification removed - using internal bucket instead
+// (cross-account permissions prevented configuring notifications on external bucket)
 
 // =============================================================================
 // ECR Repository para el Worker
@@ -428,8 +434,8 @@ const sftpEc2Role = new aws.iam.Role(`${projectName}-sftp-ec2-role`, {
 new aws.iam.RolePolicy(`${projectName}-sftp-ec2-policy`, {
   role: sftpEc2Role.id,
   policy: pulumi
-    .all([sftpUserPassword.arn])
-    .apply(([secretArn]) =>
+    .all([sftpUserPassword.arn, bucket.arn])
+    .apply(([secretArn, bucketArn]) =>
       JSON.stringify({
         Version: "2012-10-17",
         Statement: [
@@ -443,13 +449,13 @@ new aws.iam.RolePolicy(`${projectName}-sftp-ec2-policy`, {
             Sid: "WriteToS3LandingBucket",
             Effect: "Allow",
             Action: ["s3:PutObject", "s3:PutObjectAcl"],
-            Resource: "arn:aws:s3:::data-do-ent-file-ingestion-test-landing/*",
+            Resource: `${bucketArn}/*`,
           },
           {
             Sid: "ListS3LandingBucket",
             Effect: "Allow",
             Action: ["s3:ListBucket"],
-            Resource: "arn:aws:s3:::data-do-ent-file-ingestion-test-landing",
+            Resource: bucketArn,
           },
         ],
       })
@@ -520,112 +526,124 @@ const windowsAmi = aws.ec2.getAmi({
 // Función helper para generar el script PowerShell de User Data
 function generateUserData(
   secretName: string,
-  regionName: string
+  regionName: string,
+  bucketName: string
 ): string {
-  // Script de sincronización (se guarda como archivo separado en la instancia)
+  // Script de sincronización multi-folder (se guarda como archivo separado en la instancia)
+  // NOTE: This content is embedded inside a PowerShell @'...'@ here-string,
+  // so $ signs are literal and NOT expanded during the user data execution.
+  // They only get interpreted when the sync script is actually run later.
   const syncScriptContent = `
 # =============================================================================
-# Sync-BoardFilesToS3.ps1 - CE Broker Board Files Sync Script
+# Sync-BoardFilesToS3.ps1 - Multi-Folder Board Files Sync Script
 # =============================================================================
 
-\\$ErrorActionPreference = "Continue"
-\\$LandingPath = "C:\\\\SFTP\\\\BoardFiles\\\\Landing"
-\\$ArchivePath = "C:\\\\SFTP\\\\BoardFiles\\\\Archive"
-\\$LogPath = "C:\\\\SFTP\\\\Logs\\\\sync.log"
-\\$BucketName = "data-do-ent-file-ingestion-test-landing"
-\\$S3Prefix = ""
-\\$AwsRegion = "${regionName}"
+$ErrorActionPreference = "Continue"
+$BaseLandingPath = "C:\\SFTP\\BoardFiles\\Landing"
+$BaseArchivePath = "C:\\SFTP\\BoardFiles\\Archive"
+$LogPath = "C:\\SFTP\\Logs\\sync.log"
+$BucketName = "${bucketName}"
+$AwsRegion = "${regionName}"
+$DatasetFolders = @("board-files", "nursing-files", "pharmacy")
 
 function Write-SyncLog {
-    param([string]\\$Message, [string]\\$Level = "INFO")
-    \\$timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    \\$logMessage = "[\\$timestamp] [\\$Level] \\$Message"
-    Add-Content -Path \\$LogPath -Value \\$logMessage -Force
-    \\$source = "BoardFileSync"
-    if (-not [System.Diagnostics.EventLog]::SourceExists(\\$source)) {
-        New-EventLog -LogName Application -Source \\$source -ErrorAction SilentlyContinue
+    param([string]$Message, [string]$Level = "INFO")
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $logMessage = "[$timestamp] [$Level] $Message"
+    Add-Content -Path $LogPath -Value $logMessage -Force
+    $source = "BoardFileSync"
+    if (-not [System.Diagnostics.EventLog]::SourceExists($source)) {
+        New-EventLog -LogName Application -Source $source -ErrorAction SilentlyContinue
     }
-    \\$eventType = switch (\\$Level) {
+    $eventType = switch ($Level) {
         "ERROR" { "Error" }
         "WARN"  { "Warning" }
         default { "Information" }
     }
-    Write-EventLog -LogName Application -Source \\$source -EventId 1000 -EntryType \\$eventType -Message \\$Message -ErrorAction SilentlyContinue
+    Write-EventLog -LogName Application -Source $source -EventId 1000 -EntryType $eventType -Message $Message -ErrorAction SilentlyContinue
 }
 
 function Test-FileNotLocked {
-    param([string]\\$FilePath)
+    param([string]$FilePath)
     try {
-        \\$fileStream = [System.IO.File]::Open(\\$FilePath, 'Open', 'Read', 'None')
-        \\$fileStream.Close()
-        \\$fileStream.Dispose()
-        return \\$true
+        $fileStream = [System.IO.File]::Open($FilePath, 'Open', 'Read', 'None')
+        $fileStream.Close()
+        $fileStream.Dispose()
+        return $true
     } catch {
-        return \\$false
+        return $false
     }
 }
 
 function Get-FileStableSize {
-    param([string]\\$FilePath, [int]\\$WaitSeconds = 5)
-    \\$size1 = (Get-Item \\$FilePath).Length
-    Start-Sleep -Seconds \\$WaitSeconds
-    \\$size2 = (Get-Item \\$FilePath).Length
-    return \\$size1 -eq \\$size2
+    param([string]$FilePath, [int]$WaitSeconds = 5)
+    $size1 = (Get-Item $FilePath).Length
+    Start-Sleep -Seconds $WaitSeconds
+    $size2 = (Get-Item $FilePath).Length
+    return $size1 -eq $size2
 }
 
-Write-SyncLog "Iniciando sincronizacion de archivos..."
-\\$files = Get-ChildItem -Path \\$LandingPath -File -ErrorAction SilentlyContinue
+Write-SyncLog "Iniciando sincronizacion multi-folder..."
+$totalSuccess = 0
+$totalErrors = 0
 
-if (\\$files.Count -eq 0) {
-    Write-SyncLog "No hay archivos nuevos para procesar"
-    exit 0
-}
+foreach ($datasetFolder in $DatasetFolders) {
+    $landingPath = Join-Path $BaseLandingPath $datasetFolder
+    $archivePath = Join-Path $BaseArchivePath $datasetFolder
 
-Write-SyncLog "Encontrados \\$(\\$files.Count) archivos para procesar"
-\\$successCount = 0
-\\$errorCount = 0
-
-foreach (\\$file in \\$files) {
-    \\$filePath = \\$file.FullName
-    \\$fileName = \\$file.Name
-    Write-SyncLog "Procesando: \\$fileName"
-
-    if (-not (Test-FileNotLocked -FilePath \\$filePath)) {
-        Write-SyncLog "Archivo bloqueado, omitiendo: \\$fileName" -Level "WARN"
-        continue
+    if (-not (Test-Path $landingPath)) {
+        New-Item -ItemType Directory -Path $landingPath -Force | Out-Null
+    }
+    if (-not (Test-Path $archivePath)) {
+        New-Item -ItemType Directory -Path $archivePath -Force | Out-Null
     }
 
-    if (-not (Get-FileStableSize -FilePath \\$filePath -WaitSeconds 3)) {
-        Write-SyncLog "Archivo aun en transferencia, omitiendo: \\$fileName" -Level "WARN"
-        continue
-    }
+    $files = Get-ChildItem -Path $landingPath -File -ErrorAction SilentlyContinue
+    if ($files.Count -eq 0) { continue }
 
-    try {
-        \\$timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-        if ([string]::IsNullOrEmpty(\\$S3Prefix)) {
-            \\$s3Key = "\\$timestamp" + "_" + "\\$fileName"
-        } else {
-            \\$s3Key = "\\$S3Prefix/" + "\\$timestamp" + "_" + "\\$fileName"
+    Write-SyncLog "[$datasetFolder] Encontrados $($files.Count) archivos"
+
+    foreach ($file in $files) {
+        $filePath = $file.FullName
+        $fileName = $file.Name
+
+        if (-not (Test-FileNotLocked -FilePath $filePath)) {
+            Write-SyncLog "[$datasetFolder] Archivo bloqueado: $fileName" -Level "WARN"
+            continue
         }
-        Write-SyncLog "Subiendo a s3://\\$BucketName/\\$s3Key"
-        Write-S3Object -BucketName \\$BucketName -File \\$filePath -Key \\$s3Key -Region \\$AwsRegion
-        \\$archiveFileName = (Get-Date -Format 'yyyyMMdd_HHmmss') + "_" + \\$fileName
-        \\$archiveDest = Join-Path \\$ArchivePath \\$archiveFileName
-        Move-Item -Path \\$filePath -Destination \\$archiveDest -Force
-        Write-SyncLog "Archivo procesado exitosamente: \\$fileName -> \\$s3Key"
-        \\$successCount++
-    } catch {
-        Write-SyncLog "Error procesando \\$fileName : \\$(\\$_.Exception.Message)" -Level "ERROR"
-        \\$errorCount++
+
+        if (-not (Get-FileStableSize -FilePath $filePath -WaitSeconds 3)) {
+            Write-SyncLog "[$datasetFolder] En transferencia: $fileName" -Level "WARN"
+            continue
+        }
+
+        try {
+            $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+            $s3Key = "$datasetFolder/" + "$timestamp" + "_" + "$fileName"
+            Write-SyncLog "[$datasetFolder] Subiendo a s3://$BucketName/$s3Key"
+            Write-S3Object -BucketName $BucketName -File $filePath -Key $s3Key -Region $AwsRegion
+            $archiveFileName = (Get-Date -Format 'yyyyMMdd_HHmmss') + "_" + $fileName
+            $archiveDest = Join-Path $archivePath $archiveFileName
+            Move-Item -Path $filePath -Destination $archiveDest -Force
+            Write-SyncLog "[$datasetFolder] OK: $fileName -> $s3Key"
+            $totalSuccess++
+        } catch {
+            Write-SyncLog "[$datasetFolder] Error: $fileName - $($_.Exception.Message)" -Level "ERROR"
+            $totalErrors++
+        }
     }
 }
 
-Write-SyncLog "Sincronizacion completada. Exitosos: \\$successCount, Errores: \\$errorCount"
+Write-SyncLog "Completado: Exitosos=$totalSuccess, Errores=$totalErrors"
 
-\\$cutoffDate = (Get-Date).AddDays(-30)
-Get-ChildItem -Path \\$ArchivePath -File | Where-Object { \\$_.LastWriteTime -lt \\$cutoffDate } | ForEach-Object {
-    Write-SyncLog "Eliminando archivo antiguo de archive: \\$(\\$_.Name)"
-    Remove-Item \\$_.FullName -Force
+$cutoffDate = (Get-Date).AddDays(-30)
+foreach ($datasetFolder in $DatasetFolders) {
+    $archivePath = Join-Path $BaseArchivePath $datasetFolder
+    if (Test-Path $archivePath) {
+        Get-ChildItem -Path $archivePath -File | Where-Object { $_.LastWriteTime -lt $cutoffDate } | ForEach-Object {
+            Remove-Item $_.FullName -Force
+        }
+    }
 }
 `.trim();
 
@@ -634,24 +652,26 @@ Get-ChildItem -Path \\$ArchivePath -File | Where-Object { \\$_.LastWriteTime -lt
 # SFTP Windows Server Setup Script - CE Broker Board Files
 # =============================================================================
 
-\\$ErrorActionPreference = "Stop"
-\\$LogFile = "C:\\\\SFTP\\\\Logs\\\\setup.log"
+$ErrorActionPreference = "Stop"
+$LogFile = "C:\\SFTP\\Logs\\setup.log"
 
 function Write-Log {
-    param([string]\\$Message)
-    \\$timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    \\$logMessage = "[\\$timestamp] \\$Message"
-    Add-Content -Path \\$LogFile -Value \\$logMessage -Force
-    Write-Host \\$logMessage
+    param([string]$Message)
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $logMessage = "[$timestamp] $Message"
+    Add-Content -Path $LogFile -Value $logMessage -Force
+    Write-Host $logMessage
 }
 
-# Crear estructura de carpetas
-New-Item -ItemType Directory -Path "C:\\\\SFTP\\\\BoardFiles\\\\Landing" -Force
-New-Item -ItemType Directory -Path "C:\\\\SFTP\\\\BoardFiles\\\\Archive" -Force
-New-Item -ItemType Directory -Path "C:\\\\SFTP\\\\Scripts" -Force
-New-Item -ItemType Directory -Path "C:\\\\SFTP\\\\Logs" -Force
+# Crear estructura de carpetas (multi-folder)
+New-Item -ItemType Directory -Path "C:\\SFTP\\Scripts" -Force
+New-Item -ItemType Directory -Path "C:\\SFTP\\Logs" -Force
+foreach ($folder in @("board-files", "nursing-files", "pharmacy")) {
+    New-Item -ItemType Directory -Path "C:\\SFTP\\BoardFiles\\Landing\\$folder" -Force
+    New-Item -ItemType Directory -Path "C:\\SFTP\\BoardFiles\\Archive\\$folder" -Force
+}
 
-Write-Log "Estructura de carpetas creada"
+Write-Log "Estructura de carpetas creada (board-files, nursing-files, pharmacy)"
 
 # -----------------------------------------------------------------------------
 # Instalar y configurar OpenSSH Server
@@ -670,9 +690,9 @@ Write-Log "OpenSSH Server instalado y configurado"
 # -----------------------------------------------------------------------------
 Write-Log "Recuperando credenciales desde Secrets Manager..."
 
-\\$secretValue = Get-SECSecretValue -SecretId "${secretName}" -Region "${regionName}"
-\\$secretJson = \\$secretValue.SecretString | ConvertFrom-Json
-\\$sftpPassword = \\$secretJson.password
+$secretValue = Get-SECSecretValue -SecretId "${secretName}" -Region "${regionName}"
+$secretJson = $secretValue.SecretString | ConvertFrom-Json
+$sftpPassword = $secretJson.password
 
 Write-Log "Credenciales recuperadas exitosamente"
 
@@ -681,8 +701,8 @@ Write-Log "Credenciales recuperadas exitosamente"
 # -----------------------------------------------------------------------------
 Write-Log "Creando usuario BoardUser..."
 
-\\$securePassword = ConvertTo-SecureString \\$sftpPassword -AsPlainText -Force
-New-LocalUser -Name "BoardUser" -Password \\$securePassword -FullName "Board Files User" -Description "Usuario SFTP para archivos de juntas" -PasswordNeverExpires -UserMayNotChangePassword -ErrorAction SilentlyContinue
+$securePassword = ConvertTo-SecureString $sftpPassword -AsPlainText -Force
+New-LocalUser -Name "BoardUser" -Password $securePassword -FullName "Board Files User" -Description "Usuario SFTP para archivos de juntas" -PasswordNeverExpires -UserMayNotChangePassword -ErrorAction SilentlyContinue
 Add-LocalGroupMember -Group "Users" -Member "BoardUser" -ErrorAction SilentlyContinue
 
 Write-Log "Usuario BoardUser creado"
@@ -692,32 +712,32 @@ Write-Log "Usuario BoardUser creado"
 # -----------------------------------------------------------------------------
 Write-Log "Configurando SFTP chroot..."
 
-\\$sshdConfig = @"
+$sshdConfig = @"
 
 # SFTP Configuration for BoardUser
 Match User BoardUser
-    ChrootDirectory C:\\\\SFTP\\\\BoardFiles
+    ChrootDirectory C:\\SFTP\\BoardFiles
     ForceCommand internal-sftp
     AllowTcpForwarding no
     X11Forwarding no
 "@
 
-Add-Content -Path "C:\\\\ProgramData\\\\ssh\\\\sshd_config" -Value \\$sshdConfig
+Add-Content -Path "C:\\ProgramData\\ssh\\sshd_config" -Value $sshdConfig
 
 # Configurar permisos de carpeta
-\\$acl = Get-Acl "C:\\\\SFTP\\\\BoardFiles"
-\\$acl.SetAccessRuleProtection(\\$true, \\$false)
+$acl = Get-Acl "C:\\SFTP\\BoardFiles"
+$acl.SetAccessRuleProtection($true, $false)
 
-\\$adminRule = New-Object System.Security.AccessControl.FileSystemAccessRule("BUILTIN\\\\Administrators", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
-\\$acl.AddAccessRule(\\$adminRule)
+$adminRule = New-Object System.Security.AccessControl.FileSystemAccessRule("BUILTIN\\Administrators", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
+$acl.AddAccessRule($adminRule)
 
-\\$systemRule = New-Object System.Security.AccessControl.FileSystemAccessRule("NT AUTHORITY\\\\SYSTEM", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
-\\$acl.AddAccessRule(\\$systemRule)
+$systemRule = New-Object System.Security.AccessControl.FileSystemAccessRule("NT AUTHORITY\\SYSTEM", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
+$acl.AddAccessRule($systemRule)
 
-\\$userRule = New-Object System.Security.AccessControl.FileSystemAccessRule("BoardUser", "Modify", "ContainerInherit,ObjectInherit", "None", "Allow")
-\\$acl.AddAccessRule(\\$userRule)
+$userRule = New-Object System.Security.AccessControl.FileSystemAccessRule("BoardUser", "Modify", "ContainerInherit,ObjectInherit", "None", "Allow")
+$acl.AddAccessRule($userRule)
 
-Set-Acl -Path "C:\\\\SFTP\\\\BoardFiles" \\$acl
+Set-Acl -Path "C:\\SFTP\\BoardFiles" $acl
 Restart-Service sshd
 
 Write-Log "SFTP chroot configurado"
@@ -727,11 +747,11 @@ Write-Log "SFTP chroot configurado"
 # -----------------------------------------------------------------------------
 Write-Log "Creando script de sincronizacion..."
 
-\\$syncScriptContent = @'
+$syncScriptContent = @'
 ${syncScriptContent}
 '@
 
-Set-Content -Path "C:\\\\SFTP\\\\Scripts\\\\Sync-BoardFilesToS3.ps1" -Value \\$syncScriptContent -Force
+Set-Content -Path "C:\\SFTP\\Scripts\\Sync-BoardFilesToS3.ps1" -Value $syncScriptContent -Force
 
 Write-Log "Script de sincronizacion creado"
 
@@ -740,12 +760,12 @@ Write-Log "Script de sincronizacion creado"
 # -----------------------------------------------------------------------------
 Write-Log "Creando tarea programada..."
 
-\\$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -ExecutionPolicy Bypass -File C:\\\\SFTP\\\\Scripts\\\\Sync-BoardFilesToS3.ps1"
-\\$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 5) -RepetitionDuration (New-TimeSpan -Days 9999)
-\\$principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
-\\$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -RunOnlyIfNetworkAvailable
+$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -ExecutionPolicy Bypass -File C:\\SFTP\\Scripts\\Sync-BoardFilesToS3.ps1"
+$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 5) -RepetitionDuration (New-TimeSpan -Days 9999)
+$principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
+$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -RunOnlyIfNetworkAvailable
 
-Register-ScheduledTask -TaskName "BoardFiles-S3-Sync" -Action \\$action -Trigger \\$trigger -Principal \\$principal -Settings \\$settings -Description "Sincroniza archivos de Board Files a S3 cada 5 minutos" -Force
+Register-ScheduledTask -TaskName "BoardFiles-S3-Sync" -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description "Sincroniza archivos de Board Files a S3 cada 5 minutos" -Force
 
 Write-Log "Tarea programada creada: BoardFiles-S3-Sync"
 
@@ -757,11 +777,11 @@ if (-not [System.Diagnostics.EventLog]::SourceExists("BoardFileSync")) {
 Write-Log "============================================="
 Write-Log "Setup completado exitosamente!"
 Write-Log "- Usuario SFTP: BoardUser"
-Write-Log "- Carpeta Landing: C:\\\\SFTP\\\\BoardFiles\\\\Landing"
-Write-Log "- Carpeta Archive: C:\\\\SFTP\\\\BoardFiles\\\\Archive"
-Write-Log "- Script de sync: C:\\\\SFTP\\\\Scripts\\\\Sync-BoardFilesToS3.ps1"
+Write-Log "- Carpeta Landing: C:\\SFTP\\BoardFiles\\Landing\\{folder}"
+Write-Log "- Carpeta Archive: C:\\SFTP\\BoardFiles\\Archive\\{folder}"
+Write-Log "- Script de sync: C:\\SFTP\\Scripts\\Sync-BoardFilesToS3.ps1"
 Write-Log "- Tarea programada: BoardFiles-S3-Sync (cada 5 min)"
-Write-Log "- Bucket S3: data-do-ent-file-ingestion-test-curated/inbound/cebroker/"
+Write-Log "- Bucket S3: data-do-ent-file-ingestion-test-landing"
 Write-Log "============================================="
 
 </powershell>
@@ -770,12 +790,13 @@ Write-Log "============================================="
 
 // User Data - PowerShell Script completo
 const userData = pulumi
-  .all([sftpUserPassword.name, region])
+  .all([sftpUserPassword.name, region, bucket.bucket])
   .apply(
-    ([secretName, regionData]: [
+    ([secretName, regionData, bucketName]: [
       string,
       aws.GetRegionResult,
-    ]) => generateUserData(secretName, regionData.name)
+      string,
+    ]) => generateUserData(secretName, regionData.name, bucketName)
   );
 
 // Instancia EC2 Windows Server 2022
@@ -783,6 +804,7 @@ const sftpInstance = new aws.ec2.Instance(`${projectName}-sftp-server`, {
   ami: windowsAmi.then((ami) => ami.id),
   instanceType: "t3.medium",
   subnetId: configSubnetIds[0],
+  associatePublicIpAddress: true,
   vpcSecurityGroupIds: [sftpSg.id],
   iamInstanceProfile: sftpInstanceProfile.name,
   userData: userData,
@@ -929,8 +951,8 @@ new aws.iam.RolePolicyAttachment(
 new aws.iam.RolePolicy(`${projectName}-enrichment-lambda-policy`, {
   role: enrichmentLambdaRole.id,
   policy: pulumi
-    .all([ingestStateTable.arn, bucket.arn])
-    .apply(([tableArn, bucketArn]: [string, string]) =>
+    .all([ingestStateTable.arn, datasetConfigTable.arn, bucket.arn])
+    .apply(([tableArn, configTableArn, bucketArn]: [string, string, string]) =>
       JSON.stringify({
         Version: "2012-10-17",
         Statement: [
@@ -938,6 +960,11 @@ new aws.iam.RolePolicy(`${projectName}-enrichment-lambda-policy`, {
             Effect: "Allow",
             Action: ["dynamodb:GetItem", "dynamodb:Query"],
             Resource: [tableArn, `${tableArn}/index/*`],
+          },
+          {
+            Effect: "Allow",
+            Action: ["dynamodb:GetItem", "dynamodb:Query", "dynamodb:Scan"],
+            Resource: configTableArn,
           },
           {
             Effect: "Allow",
@@ -964,9 +991,12 @@ const enrichmentLambda = new aws.lambda.Function(
       ".": new pulumi.asset.FileArchive("../worker/dist"),
     }),
     environment: {
-      variables: ingestStateTable.name.apply((tableName) => ({
-        DYNAMO_TABLE: tableName,
-      })),
+      variables: pulumi
+        .all([ingestStateTable.name, datasetConfigTable.name])
+        .apply(([tableName, configTableName]) => ({
+          DYNAMO_TABLE: tableName,
+          CONFIG_TABLE: configTableName,
+        })),
     },
     tags: { Environment: environment },
   }
