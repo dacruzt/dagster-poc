@@ -10,6 +10,8 @@
 
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, GetCommand } from "@aws-sdk/lib-dynamodb";
+import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
+import { findSchema, validateCsvColumns, validateJsonFields } from "./column-validator";
 
 // --- Types ---
 
@@ -43,6 +45,8 @@ interface EnrichmentData {
   dataset_id?: string;
   schema_version?: string;
   compute_target?: "LAMBDA" | "FARGATE";
+  validation_status?: "valid" | "invalid" | "skipped";
+  validation_error?: string;
 }
 
 interface EnrichedOutput {
@@ -55,6 +59,7 @@ interface EnrichedOutput {
 const tableName = process.env.DYNAMO_TABLE!;
 const dynamoClient = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(dynamoClient);
+const s3Client = new S3Client({});
 
 let cachedConfig: DatasetConfig | undefined;
 
@@ -92,6 +97,147 @@ function isExtensionAllowed(s3Key: string, allowedExtensions: string[]): boolean
   if (!allowedExtensions || allowedExtensions.length === 0) return true;
   const ext = s3Key.substring(s3Key.lastIndexOf(".")).toLowerCase();
   return allowedExtensions.includes(ext);
+}
+
+/**
+ * Validates file structure by reading only the header/first lines.
+ * Fast validation without downloading entire file.
+ */
+async function validateFileStructure(
+  bucket: string,
+  key: string
+): Promise<{ valid: boolean; error?: string }> {
+  try {
+    const schema = findSchema(key);
+
+    // Skip validation if no schema matched
+    if (!schema || schema.requiredColumns.length === 0) {
+      return { valid: true };
+    }
+
+    const ext = key.substring(key.lastIndexOf(".")).toLowerCase();
+
+    // CSV validation: read first 8KB (header + sample rows)
+    if (ext === ".csv") {
+      const response = await s3Client.send(
+        new GetObjectCommand({
+          Bucket: bucket,
+          Key: key,
+          Range: "bytes=0-8191", // First 8KB
+        })
+      );
+
+      const content = await response.Body?.transformToString("utf-8");
+      if (!content) {
+        return { valid: false, error: "Empty file" };
+      }
+
+      const lines = content.split("\n").filter((l) => l.trim());
+      if (lines.length < 2) {
+        return { valid: false, error: "CSV file missing header or data rows" };
+      }
+
+      const headers = parseCsvLine(lines[0]);
+      const firstRowValues = parseCsvLine(lines[1]);
+      const firstRow: Record<string, string> = {};
+      for (let i = 0; i < headers.length; i++) {
+        firstRow[headers[i]] = firstRowValues[i] || "";
+      }
+
+      const validation = validateCsvColumns(headers, firstRow, schema);
+      if (!validation.valid) {
+        return { valid: false, error: validation.errors.join("; ") };
+      }
+
+      return { valid: true };
+    }
+
+    // JSON validation: read first 16KB
+    if (ext === ".json") {
+      const response = await s3Client.send(
+        new GetObjectCommand({
+          Bucket: bucket,
+          Key: key,
+          Range: "bytes=0-16383", // First 16KB
+        })
+      );
+
+      const content = await response.Body?.transformToString("utf-8");
+      if (!content) {
+        return { valid: false, error: "Empty file" };
+      }
+
+      let firstRecord: unknown = null;
+
+      // Try parsing as JSON array
+      try {
+        const parsed = JSON.parse(content);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          firstRecord = parsed[0];
+        } else if (!Array.isArray(parsed)) {
+          firstRecord = parsed;
+        }
+      } catch {
+        // Try JSONL format (first line)
+        const firstLine = content.split("\n").find((l) => l.trim());
+        if (firstLine) {
+          try {
+            firstRecord = JSON.parse(firstLine);
+          } catch {
+            return { valid: false, error: "Invalid JSON format" };
+          }
+        }
+      }
+
+      if (!firstRecord) {
+        return { valid: false, error: "No records found in JSON file" };
+      }
+
+      const validation = validateJsonFields(firstRecord, schema);
+      if (!validation.valid) {
+        return { valid: false, error: validation.errors.join("; ") };
+      }
+
+      return { valid: true };
+    }
+
+    // Other formats: skip structure validation
+    return { valid: true };
+  } catch (error) {
+    console.error("Error validating file structure:", error);
+    // On error, allow file through (fail open) to avoid blocking valid files
+    return { valid: true };
+  }
+}
+
+/**
+ * Simple CSV line parser (duplicated from file-processor.ts for independence)
+ */
+function parseCsvLine(line: string): string[] {
+  const result: string[] = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+
+    if (char === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (char === "," && !inQuotes) {
+      result.push(current.trim());
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+
+  result.push(current.trim());
+  return result;
 }
 
 /**
@@ -149,7 +295,27 @@ export async function handler(events: PipeEnrichmentInput[]): Promise<EnrichedOu
         continue;
       }
 
-      console.log(`Enriched: dataset_id=${config.dataset_id}, compute_target=${config.compute_target}`);
+      // ✅ NEW: Validate file structure (header/columns) before allowing through
+      console.log(`Validating file structure for "${s3Key}"...`);
+      const structureValidation = await validateFileStructure(
+        record.s3.bucket.name,
+        s3Key
+      );
+
+      if (!structureValidation.valid) {
+        console.log(`Structure validation failed for "${s3Key}": ${structureValidation.error}`);
+        results.push({
+          original_event: s3Event,
+          enrichment_data: {
+            registered: false,
+            validation_status: "invalid",
+            validation_error: structureValidation.error,
+          },
+        });
+        continue;
+      }
+
+      console.log(`✅ File validated successfully: dataset_id=${config.dataset_id}, compute_target=${config.compute_target}`);
 
       results.push({
         original_event: s3Event,
@@ -158,6 +324,7 @@ export async function handler(events: PipeEnrichmentInput[]): Promise<EnrichedOu
           dataset_id: config.dataset_id,
           schema_version: config.schema_version,
           compute_target: config.compute_target,
+          validation_status: "valid",
         },
       });
     } catch (error) {

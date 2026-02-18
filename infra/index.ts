@@ -928,18 +928,28 @@ new aws.iam.RolePolicyAttachment(
 
 new aws.iam.RolePolicy(`${projectName}-enrichment-lambda-policy`, {
   role: enrichmentLambdaRole.id,
-  policy: ingestStateTable.arn.apply((tableArn) =>
-    JSON.stringify({
-      Version: "2012-10-17",
-      Statement: [
-        {
-          Effect: "Allow",
-          Action: ["dynamodb:GetItem", "dynamodb:Query"],
-          Resource: [tableArn, `${tableArn}/index/*`],
-        },
-      ],
-    })
-  ),
+  policy: pulumi
+    .all([ingestStateTable.arn, bucket.arn])
+    .apply(([tableArn, bucketArn]: [string, string]) =>
+      JSON.stringify({
+        Version: "2012-10-17",
+        Statement: [
+          {
+            Effect: "Allow",
+            Action: ["dynamodb:GetItem", "dynamodb:Query"],
+            Resource: [tableArn, `${tableArn}/index/*`],
+          },
+          {
+            Effect: "Allow",
+            Action: ["s3:GetObject", "s3:HeadObject"],
+            Resource: [
+              `${bucketArn}/*`,
+              `${externalBucketArn}/*`,
+            ],
+          },
+        ],
+      })
+    ),
 });
 
 const enrichmentLambda = new aws.lambda.Function(
@@ -948,8 +958,8 @@ const enrichmentLambda = new aws.lambda.Function(
     runtime: "nodejs20.x",
     handler: "enrichment-handler.handler",
     role: enrichmentLambdaRole.arn,
-    timeout: 30,
-    memorySize: 128,
+    timeout: 60, // Increased for S3 validation
+    memorySize: 256, // Increased for file parsing
     code: new pulumi.asset.AssetArchive({
       ".": new pulumi.asset.FileArchive("../worker/dist"),
     }),
