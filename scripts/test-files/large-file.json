@@ -1,3502 +1,500 @@
-[
-  {
-    "date": "2024-05-17",
-    "license_number": "LIC-678335",
-    "board_code": "NC-RN",
-    "name": "Oscar Delgado",
-    "status": "active"
-  },
-  {
-    "date": "2024-04-27",
-    "license_number": "LIC-743788",
-    "board_code": "NY-RN",
-    "name": "Oscar Delgado",
-    "status": "active"
-  },
-  {
-    "date": "2025-08-26",
-    "license_number": "LIC-144371",
-    "board_code": "OH-LPN",
-    "name": "Valentina Cruz",
-    "status": "active"
-  },
-  {
-    "date": "2026-01-23",
-    "license_number": "LIC-516084",
-    "board_code": "IL-LPN",
-    "name": "Jorge Torres",
-    "status": "active"
-  },
-  {
-    "date": "2024-08-28",
-    "license_number": "LIC-664512",
-    "board_code": "NY-RN",
-    "name": "Lucia Romero",
-    "status": "active"
-  },
-  {
-    "date": "2024-11-09",
-    "license_number": "LIC-894335",
-    "board_code": "IL-RN",
-    "name": "Victor Soto",
-    "status": "active"
-  },
-  {
-    "date": "2025-04-08",
-    "license_number": "LIC-765304",
-    "board_code": "MI-RN",
-    "name": "Lucia Romero",
-    "status": "pending"
-  },
-  {
-    "date": "2024-09-06",
-    "license_number": "LIC-273659",
-    "board_code": "PA-LPN",
-    "name": "Oscar Delgado",
-    "status": "renewed"
-  },
-  {
-    "date": "2024-10-24",
-    "license_number": "LIC-352310",
-    "board_code": "NY-RN",
-    "name": "Maria Garcia",
-    "status": "active"
-  },
-  {
-    "date": "2025-05-10",
-    "license_number": "LIC-216469",
-    "board_code": "GA-LPN",
-    "name": "Paula Gutierrez",
-    "status": "active"
-  },
-  {
-    "date": "2024-09-18",
-    "license_number": "LIC-500239",
-    "board_code": "CA-RN",
-    "name": "Mariana Alvarez",
-    "status": "renewed"
-  },
-  {
-    "date": "2025-02-04",
-    "license_number": "LIC-916724",
-    "board_code": "NY-LPN",
-    "name": "Mariana Alvarez",
-    "status": "renewed"
-  },
-  {
-    "date": "2024-10-18",
-    "license_number": "LIC-808666",
-    "board_code": "NC-LPN",
-    "name": "Sebastian Pena",
-    "status": "active"
-  },
-  {
-    "date": "2025-05-04",
-    "license_number": "LIC-422528",
-    "board_code": "OH-LPN",
-    "name": "Ricardo Medina",
-    "status": "active"
-  },
-  {
-    "date": "2024-05-24",
-    "license_number": "LIC-118257",
-    "board_code": "NY-LPN",
-    "name": "Gabriela Moreno",
-    "status": "pending"
-  },
-  {
-    "date": "2025-07-14",
-    "license_number": "LIC-941684",
-    "board_code": "CA-RN",
-    "name": "Alejandro Ruiz",
-    "status": "active"
-  },
-  {
-    "date": "2025-09-03",
-    "license_number": "LIC-621046",
-    "board_code": "CA-LPN",
-    "name": "Gabriela Moreno",
-    "status": "expired"
-  },
-  {
-    "date": "2025-10-23",
-    "license_number": "LIC-266757",
-    "board_code": "GA-LPN",
-    "name": "Paula Gutierrez",
-    "status": "active"
-  },
-  {
-    "date": "2025-12-19",
-    "license_number": "LIC-219807",
-    "board_code": "MI-RN",
-    "name": "Mariana Alvarez",
-    "status": "active"
-  },
-  {
-    "date": "2025-04-06",
-    "license_number": "LIC-849580",
-    "board_code": "GA-RN",
-    "name": "Pedro Ramirez",
-    "status": "pending"
-  },
-  {
-    "date": "2024-03-29",
-    "license_number": "LIC-767161",
-    "board_code": "MI-LPN",
-    "name": "Carlos Lopez",
-    "status": "suspended"
-  },
-  {
-    "date": "2025-06-07",
-    "license_number": "LIC-863881",
-    "board_code": "GA-LPN",
-    "name": "Daniel Jimenez",
-    "status": "active"
-  },
-  {
-    "date": "2025-07-22",
-    "license_number": "LIC-382266",
-    "board_code": "IL-LPN",
-    "name": "Natalia Guerrero",
-    "status": "active"
-  },
-  {
-    "date": "2024-11-19",
-    "license_number": "LIC-877338",
-    "board_code": "PA-LPN",
-    "name": "Camila Ortiz",
-    "status": "expired"
-  },
-  {
-    "date": "2025-04-13",
-    "license_number": "LIC-189865",
-    "board_code": "CA-LPN",
-    "name": "Lucia Romero",
-    "status": "renewed"
-  },
-  {
-    "date": "2025-01-17",
-    "license_number": "LIC-359599",
-    "board_code": "CA-LPN",
-    "name": "Natalia Guerrero",
-    "status": "active"
-  },
-  {
-    "date": "2024-10-17",
-    "license_number": "LIC-313568",
-    "board_code": "PA-RN",
-    "name": "Sebastian Pena",
-    "status": "expired"
-  },
-  {
-    "date": "2025-11-22",
-    "license_number": "LIC-450241",
-    "board_code": "CA-LPN",
-    "name": "Jorge Torres",
-    "status": "active"
-  },
-  {
-    "date": "2024-01-18",
-    "license_number": "LIC-251636",
-    "board_code": "FL-LPN",
-    "name": "Jorge Torres",
-    "status": "active"
-  },
-  {
-    "date": "2024-04-07",
-    "license_number": "LIC-726163",
-    "board_code": "NY-LPN",
-    "name": "Pedro Ramirez",
-    "status": "suspended"
-  },
-  {
-    "date": "2024-10-13",
-    "license_number": "LIC-761185",
-    "board_code": "GA-RN",
-    "name": "Sebastian Pena",
-    "status": "active"
-  },
-  {
-    "date": "2025-09-09",
-    "license_number": "LIC-741132",
-    "board_code": "CA-LPN",
-    "name": "Carlos Lopez",
-    "status": "renewed"
-  },
-  {
-    "date": "2024-01-07",
-    "license_number": "LIC-148731",
-    "board_code": "PA-RN",
-    "name": "Gabriela Moreno",
-    "status": "active"
-  },
-  {
-    "date": "2025-11-08",
-    "license_number": "LIC-811895",
-    "board_code": "OH-RN",
-    "name": "Elena Rodriguez",
-    "status": "pending"
-  },
-  {
-    "date": "2024-09-06",
-    "license_number": "LIC-647730",
-    "board_code": "GA-LPN",
-    "name": "Diego Castillo",
-    "status": "active"
-  },
-  {
-    "date": "2025-09-11",
-    "license_number": "LIC-294122",
-    "board_code": "NC-RN",
-    "name": "Fernando Reyes",
-    "status": "active"
-  },
-  {
-    "date": "2024-03-16",
-    "license_number": "LIC-836576",
-    "board_code": "NC-LPN",
-    "name": "Jorge Torres",
-    "status": "suspended"
-  },
-  {
-    "date": "2024-09-06",
-    "license_number": "LIC-756552",
-    "board_code": "MI-RN",
-    "name": "Sofia Hernandez",
-    "status": "active"
-  },
-  {
-    "date": "2025-09-09",
-    "license_number": "LIC-911716",
-    "board_code": "PA-RN",
-    "name": "Pedro Ramirez",
-    "status": "active"
-  },
-  {
-    "date": "2025-06-12",
-    "license_number": "LIC-304114",
-    "board_code": "GA-LPN",
-    "name": "Maria Garcia",
-    "status": "expired"
-  },
-  {
-    "date": "2024-12-29",
-    "license_number": "LIC-210690",
-    "board_code": "NY-RN",
-    "name": "Victor Soto",
-    "status": "active"
-  },
-  {
-    "date": "2025-06-22",
-    "license_number": "LIC-547573",
-    "board_code": "CA-LPN",
-    "name": "Miguel Sanchez",
-    "status": "pending"
-  },
-  {
-    "date": "2024-10-07",
-    "license_number": "LIC-414509",
-    "board_code": "PA-LPN",
-    "name": "Mariana Alvarez",
-    "status": "active"
-  },
-  {
-    "date": "2024-05-11",
-    "license_number": "LIC-912803",
-    "board_code": "PA-LPN",
-    "name": "Carlos Lopez",
-    "status": "active"
-  },
-  {
-    "date": "2025-11-14",
-    "license_number": "LIC-482466",
-    "board_code": "CA-LPN",
-    "name": "Alejandro Ruiz",
-    "status": "active"
-  },
-  {
-    "date": "2024-12-29",
-    "license_number": "LIC-350320",
-    "board_code": "FL-RN",
-    "name": "Victor Soto",
-    "status": "renewed"
-  },
-  {
-    "date": "2025-12-15",
-    "license_number": "LIC-625225",
-    "board_code": "IL-RN",
-    "name": "Victor Soto",
-    "status": "active"
-  },
-  {
-    "date": "2025-08-22",
-    "license_number": "LIC-330017",
-    "board_code": "OH-LPN",
-    "name": "Mariana Alvarez",
-    "status": "active"
-  },
-  {
-    "date": "2024-08-06",
-    "license_number": "LIC-972487",
-    "board_code": "NY-RN",
-    "name": "Fernando Reyes",
-    "status": "pending"
-  },
-  {
-    "date": "2026-01-18",
-    "license_number": "LIC-678853",
-    "board_code": "MI-RN",
-    "name": "Gabriela Moreno",
-    "status": "pending"
-  },
-  {
-    "date": "2025-06-06",
-    "license_number": "LIC-537638",
-    "board_code": "FL-RN",
-    "name": "David Morales",
-    "status": "active"
-  },
-  {
-    "date": "2025-08-16",
-    "license_number": "LIC-181786",
-    "board_code": "MI-RN",
-    "name": "Maria Garcia",
-    "status": "pending"
-  },
-  {
-    "date": "2025-01-14",
-    "license_number": "LIC-903787",
-    "board_code": "CA-LPN",
-    "name": "Carlos Lopez",
-    "status": "active"
-  },
-  {
-    "date": "2026-01-29",
-    "license_number": "LIC-713503",
-    "board_code": "IL-LPN",
-    "name": "Maria Garcia",
-    "status": "active"
-  },
-  {
-    "date": "2025-04-15",
-    "license_number": "LIC-677120",
-    "board_code": "NY-RN",
-    "name": "Valentina Cruz",
-    "status": "pending"
-  },
-  {
-    "date": "2024-08-22",
-    "license_number": "LIC-189955",
-    "board_code": "GA-LPN",
-    "name": "Ana Martinez",
-    "status": "suspended"
-  },
-  {
-    "date": "2024-04-08",
-    "license_number": "LIC-108073",
-    "board_code": "MI-LPN",
-    "name": "Miguel Sanchez",
-    "status": "expired"
-  },
-  {
-    "date": "2025-06-25",
-    "license_number": "LIC-176795",
-    "board_code": "MI-LPN",
-    "name": "Roberto Mendoza",
-    "status": "active"
-  },
-  {
-    "date": "2025-05-18",
-    "license_number": "LIC-452253",
-    "board_code": "PA-RN",
-    "name": "Isabella Flores",
-    "status": "active"
-  },
-  {
-    "date": "2024-05-24",
-    "license_number": "LIC-510531",
-    "board_code": "TX-LPN",
-    "name": "Elena Rodriguez",
-    "status": "expired"
-  },
-  {
-    "date": "2026-02-05",
-    "license_number": "LIC-635862",
-    "board_code": "NC-LPN",
-    "name": "Paula Gutierrez",
-    "status": "active"
-  },
-  {
-    "date": "2025-07-23",
-    "license_number": "LIC-346790",
-    "board_code": "NC-RN",
-    "name": "Ricardo Medina",
-    "status": "expired"
-  },
-  {
-    "date": "2024-11-14",
-    "license_number": "LIC-627298",
-    "board_code": "NY-LPN",
-    "name": "Lucia Romero",
-    "status": "active"
-  },
-  {
-    "date": "2024-12-21",
-    "license_number": "LIC-325262",
-    "board_code": "NC-LPN",
-    "name": "Roberto Mendoza",
-    "status": "active"
-  },
-  {
-    "date": "2025-10-19",
-    "license_number": "LIC-243349",
-    "board_code": "OH-LPN",
-    "name": "Diego Castillo",
-    "status": "active"
-  },
-  {
-    "date": "2024-03-02",
-    "license_number": "LIC-249758",
-    "board_code": "IL-RN",
-    "name": "Victor Soto",
-    "status": "active"
-  },
-  {
-    "date": "2025-01-11",
-    "license_number": "LIC-767818",
-    "board_code": "CA-LPN",
-    "name": "Paula Gutierrez",
-    "status": "expired"
-  },
-  {
-    "date": "2025-07-14",
-    "license_number": "LIC-350162",
-    "board_code": "FL-LPN",
-    "name": "Sebastian Pena",
-    "status": "suspended"
-  },
-  {
-    "date": "2024-12-16",
-    "license_number": "LIC-836242",
-    "board_code": "TX-RN",
-    "name": "Andres Vargas",
-    "status": "active"
-  },
-  {
-    "date": "2025-04-11",
-    "license_number": "LIC-950585",
-    "board_code": "MI-RN",
-    "name": "Elena Rodriguez",
-    "status": "expired"
-  },
-  {
-    "date": "2024-05-06",
-    "license_number": "LIC-982222",
-    "board_code": "NC-RN",
-    "name": "Paula Gutierrez",
-    "status": "active"
-  },
-  {
-    "date": "2025-10-15",
-    "license_number": "LIC-702827",
-    "board_code": "IL-LPN",
-    "name": "Miguel Sanchez",
-    "status": "suspended"
-  },
-  {
-    "date": "2026-01-15",
-    "license_number": "LIC-499427",
-    "board_code": "TX-LPN",
-    "name": "Camila Ortiz",
-    "status": "pending"
-  },
-  {
-    "date": "2024-12-12",
-    "license_number": "LIC-479737",
-    "board_code": "FL-RN",
-    "name": "Alejandro Ruiz",
-    "status": "expired"
-  },
-  {
-    "date": "2025-07-13",
-    "license_number": "LIC-660412",
-    "board_code": "CA-RN",
-    "name": "Victor Soto",
-    "status": "renewed"
-  },
-  {
-    "date": "2025-12-20",
-    "license_number": "LIC-381492",
-    "board_code": "GA-LPN",
-    "name": "Mariana Alvarez",
-    "status": "expired"
-  },
-  {
-    "date": "2024-01-24",
-    "license_number": "LIC-297159",
-    "board_code": "TX-RN",
-    "name": "Sofia Hernandez",
-    "status": "expired"
-  },
-  {
-    "date": "2025-08-10",
-    "license_number": "LIC-133889",
-    "board_code": "PA-LPN",
-    "name": "Diego Castillo",
-    "status": "active"
-  },
-  {
-    "date": "2025-12-23",
-    "license_number": "LIC-962116",
-    "board_code": "CA-LPN",
-    "name": "Roberto Mendoza",
-    "status": "active"
-  },
-  {
-    "date": "2025-10-27",
-    "license_number": "LIC-663712",
-    "board_code": "IL-RN",
-    "name": "Ana Martinez",
-    "status": "active"
-  },
-  {
-    "date": "2026-02-07",
-    "license_number": "LIC-433770",
-    "board_code": "PA-RN",
-    "name": "Andres Vargas",
-    "status": "renewed"
-  },
-  {
-    "date": "2025-12-21",
-    "license_number": "LIC-283987",
-    "board_code": "GA-RN",
-    "name": "David Morales",
-    "status": "active"
-  },
-  {
-    "date": "2025-05-17",
-    "license_number": "LIC-384566",
-    "board_code": "NY-LPN",
-    "name": "Sebastian Pena",
-    "status": "active"
-  },
-  {
-    "date": "2025-12-13",
-    "license_number": "LIC-767663",
-    "board_code": "OH-RN",
-    "name": "Sebastian Pena",
-    "status": "expired"
-  },
-  {
-    "date": "2024-08-22",
-    "license_number": "LIC-521484",
-    "board_code": "NY-LPN",
-    "name": "Carolina Aguilar",
-    "status": "active"
-  },
-  {
-    "date": "2025-01-29",
-    "license_number": "LIC-303200",
-    "board_code": "GA-RN",
-    "name": "Maria Garcia",
-    "status": "expired"
-  },
-  {
-    "date": "2025-08-21",
-    "license_number": "LIC-785765",
-    "board_code": "CA-LPN",
-    "name": "Daniel Jimenez",
-    "status": "renewed"
-  },
-  {
-    "date": "2025-01-21",
-    "license_number": "LIC-309049",
-    "board_code": "MI-LPN",
-    "name": "Sebastian Pena",
-    "status": "suspended"
-  },
-  {
-    "date": "2025-10-18",
-    "license_number": "LIC-783180",
-    "board_code": "FL-RN",
-    "name": "Carolina Aguilar",
-    "status": "active"
-  },
-  {
-    "date": "2024-10-01",
-    "license_number": "LIC-409682",
-    "board_code": "OH-RN",
-    "name": "Paula Gutierrez",
-    "status": "suspended"
-  },
-  {
-    "date": "2026-01-25",
-    "license_number": "LIC-946016",
-    "board_code": "NC-LPN",
-    "name": "Pedro Ramirez",
-    "status": "expired"
-  },
-  {
-    "date": "2025-06-29",
-    "license_number": "LIC-869406",
-    "board_code": "MI-LPN",
-    "name": "Miguel Sanchez",
-    "status": "expired"
-  },
-  {
-    "date": "2024-04-07",
-    "license_number": "LIC-583800",
-    "board_code": "CA-RN",
-    "name": "Valentina Cruz",
-    "status": "active"
-  },
-  {
-    "date": "2024-05-02",
-    "license_number": "LIC-723229",
-    "board_code": "MI-RN",
-    "name": "Daniel Jimenez",
-    "status": "pending"
-  },
-  {
-    "date": "2025-03-22",
-    "license_number": "LIC-232264",
-    "board_code": "PA-LPN",
-    "name": "Isabella Flores",
-    "status": "active"
-  },
-  {
-    "date": "2025-07-01",
-    "license_number": "LIC-496153",
-    "board_code": "GA-LPN",
-    "name": "Alejandro Ruiz",
-    "status": "active"
-  },
-  {
-    "date": "2024-11-20",
-    "license_number": "LIC-229905",
-    "board_code": "FL-LPN",
-    "name": "Paula Gutierrez",
-    "status": "renewed"
-  },
-  {
-    "date": "2024-11-15",
-    "license_number": "LIC-824437",
-    "board_code": "MI-LPN",
-    "name": "Valentina Cruz",
-    "status": "pending"
-  },
-  {
-    "date": "2025-04-26",
-    "license_number": "LIC-104125",
-    "board_code": "FL-RN",
-    "name": "Oscar Delgado",
-    "status": "active"
-  },
-  {
-    "date": "2024-07-28",
-    "license_number": "LIC-184110",
-    "board_code": "NY-RN",
-    "name": "Pedro Ramirez",
-    "status": "pending"
-  },
-  {
-    "date": "2024-07-30",
-    "license_number": "LIC-392017",
-    "board_code": "NY-RN",
-    "name": "Lucia Romero",
-    "status": "suspended"
-  },
-  {
-    "date": "2025-01-01",
-    "license_number": "LIC-763058",
-    "board_code": "CA-RN",
-    "name": "Carolina Aguilar",
-    "status": "pending"
-  },
-  {
-    "date": "2024-09-14",
-    "license_number": "LIC-868254",
-    "board_code": "IL-LPN",
-    "name": "David Morales",
-    "status": "active"
-  },
-  {
-    "date": "2025-03-14",
-    "license_number": "LIC-436906",
-    "board_code": "NY-LPN",
-    "name": "Daniel Jimenez",
-    "status": "expired"
-  },
-  {
-    "date": "2024-03-31",
-    "license_number": "LIC-611410",
-    "board_code": "TX-LPN",
-    "name": "Ana Martinez",
-    "status": "active"
-  },
-  {
-    "date": "2025-06-04",
-    "license_number": "LIC-867495",
-    "board_code": "MI-LPN",
-    "name": "Roberto Mendoza",
-    "status": "renewed"
-  },
-  {
-    "date": "2024-12-07",
-    "license_number": "LIC-964861",
-    "board_code": "NC-LPN",
-    "name": "Jorge Torres",
-    "status": "expired"
-  },
-  {
-    "date": "2025-11-24",
-    "license_number": "LIC-289949",
-    "board_code": "OH-RN",
-    "name": "Carlos Lopez",
-    "status": "active"
-  },
-  {
-    "date": "2025-02-28",
-    "license_number": "LIC-340130",
-    "board_code": "OH-RN",
-    "name": "Mariana Alvarez",
-    "status": "renewed"
-  },
-  {
-    "date": "2024-01-23",
-    "license_number": "LIC-935094",
-    "board_code": "NY-LPN",
-    "name": "Camila Ortiz",
-    "status": "active"
-  },
-  {
-    "date": "2024-09-07",
-    "license_number": "LIC-287881",
-    "board_code": "NC-RN",
-    "name": "Oscar Delgado",
-    "status": "active"
-  },
-  {
-    "date": "2024-05-14",
-    "license_number": "LIC-397717",
-    "board_code": "CA-RN",
-    "name": "Miguel Sanchez",
-    "status": "active"
-  },
-  {
-    "date": "2024-11-23",
-    "license_number": "LIC-583463",
-    "board_code": "FL-RN",
-    "name": "Oscar Delgado",
-    "status": "active"
-  },
-  {
-    "date": "2026-01-30",
-    "license_number": "LIC-888979",
-    "board_code": "OH-RN",
-    "name": "Sebastian Pena",
-    "status": "renewed"
-  },
-  {
-    "date": "2025-07-28",
-    "license_number": "LIC-205202",
-    "board_code": "MI-LPN",
-    "name": "Lucia Romero",
-    "status": "expired"
-  },
-  {
-    "date": "2025-05-26",
-    "license_number": "LIC-777060",
-    "board_code": "OH-LPN",
-    "name": "Daniel Jimenez",
-    "status": "active"
-  },
-  {
-    "date": "2025-08-08",
-    "license_number": "LIC-673691",
-    "board_code": "NC-RN",
-    "name": "Andres Vargas",
-    "status": "renewed"
-  },
-  {
-    "date": "2025-12-28",
-    "license_number": "LIC-695385",
-    "board_code": "CA-LPN",
-    "name": "Angela Rios",
-    "status": "pending"
-  },
-  {
-    "date": "2025-09-03",
-    "license_number": "LIC-385210",
-    "board_code": "FL-RN",
-    "name": "Victor Soto",
-    "status": "expired"
-  },
-  {
-    "date": "2025-04-08",
-    "license_number": "LIC-554950",
-    "board_code": "CA-LPN",
-    "name": "Maria Garcia",
-    "status": "pending"
-  },
-  {
-    "date": "2024-03-19",
-    "license_number": "LIC-512780",
-    "board_code": "NC-RN",
-    "name": "Maria Garcia",
-    "status": "renewed"
-  },
-  {
-    "date": "2025-02-04",
-    "license_number": "LIC-423342",
-    "board_code": "NC-RN",
-    "name": "Gabriela Moreno",
-    "status": "active"
-  },
-  {
-    "date": "2025-05-15",
-    "license_number": "LIC-335814",
-    "board_code": "NC-RN",
-    "name": "Laura Diaz",
-    "status": "active"
-  },
-  {
-    "date": "2025-12-23",
-    "license_number": "LIC-494568",
-    "board_code": "MI-RN",
-    "name": "Alejandro Ruiz",
-    "status": "active"
-  },
-  {
-    "date": "2024-07-10",
-    "license_number": "LIC-859844",
-    "board_code": "NC-LPN",
-    "name": "Oscar Delgado",
-    "status": "active"
-  },
-  {
-    "date": "2024-09-25",
-    "license_number": "LIC-957750",
-    "board_code": "PA-RN",
-    "name": "Diego Castillo",
-    "status": "suspended"
-  },
-  {
-    "date": "2024-10-01",
-    "license_number": "LIC-116060",
-    "board_code": "PA-LPN",
-    "name": "Carolina Aguilar",
-    "status": "expired"
-  },
-  {
-    "date": "2024-06-20",
-    "license_number": "LIC-616587",
-    "board_code": "OH-LPN",
-    "name": "Paula Gutierrez",
-    "status": "active"
-  },
-  {
-    "date": "2025-12-03",
-    "license_number": "LIC-326494",
-    "board_code": "NC-LPN",
-    "name": "Sebastian Pena",
-    "status": "active"
-  },
-  {
-    "date": "2025-10-02",
-    "license_number": "LIC-803420",
-    "board_code": "TX-LPN",
-    "name": "David Morales",
-    "status": "active"
-  },
-  {
-    "date": "2024-12-19",
-    "license_number": "LIC-165232",
-    "board_code": "CA-RN",
-    "name": "David Morales",
-    "status": "renewed"
-  },
-  {
-    "date": "2025-07-03",
-    "license_number": "LIC-485681",
-    "board_code": "FL-LPN",
-    "name": "Sebastian Pena",
-    "status": "active"
-  },
-  {
-    "date": "2025-06-06",
-    "license_number": "LIC-599411",
-    "board_code": "IL-LPN",
-    "name": "Natalia Guerrero",
-    "status": "active"
-  },
-  {
-    "date": "2026-01-29",
-    "license_number": "LIC-397294",
-    "board_code": "TX-LPN",
-    "name": "Angela Rios",
-    "status": "expired"
-  },
-  {
-    "date": "2025-03-12",
-    "license_number": "LIC-461908",
-    "board_code": "GA-LPN",
-    "name": "Sofia Hernandez",
-    "status": "active"
-  },
-  {
-    "date": "2025-03-06",
-    "license_number": "LIC-515612",
-    "board_code": "GA-RN",
-    "name": "Ricardo Medina",
-    "status": "active"
-  },
-  {
-    "date": "2026-01-01",
-    "license_number": "LIC-553424",
-    "board_code": "NC-LPN",
-    "name": "Paula Gutierrez",
-    "status": "expired"
-  },
-  {
-    "date": "2025-03-30",
-    "license_number": "LIC-995261",
-    "board_code": "NC-LPN",
-    "name": "Natalia Guerrero",
-    "status": "renewed"
-  },
-  {
-    "date": "2024-07-06",
-    "license_number": "LIC-368918",
-    "board_code": "PA-LPN",
-    "name": "Diego Castillo",
-    "status": "active"
-  },
-  {
-    "date": "2024-07-12",
-    "license_number": "LIC-441842",
-    "board_code": "FL-LPN",
-    "name": "Gabriela Moreno",
-    "status": "suspended"
-  },
-  {
-    "date": "2024-08-28",
-    "license_number": "LIC-956375",
-    "board_code": "TX-LPN",
-    "name": "Laura Diaz",
-    "status": "renewed"
-  },
-  {
-    "date": "2025-04-08",
-    "license_number": "LIC-746939",
-    "board_code": "NY-RN",
-    "name": "Carlos Lopez",
-    "status": "expired"
-  },
-  {
-    "date": "2025-04-21",
-    "license_number": "LIC-370469",
-    "board_code": "OH-RN",
-    "name": "Andres Vargas",
-    "status": "pending"
-  },
-  {
-    "date": "2024-01-01",
-    "license_number": "LIC-176652",
-    "board_code": "MI-RN",
-    "name": "Victor Soto",
-    "status": "active"
-  },
-  {
-    "date": "2024-09-03",
-    "license_number": "LIC-171281",
-    "board_code": "FL-LPN",
-    "name": "Ricardo Medina",
-    "status": "suspended"
-  },
-  {
-    "date": "2024-03-02",
-    "license_number": "LIC-418116",
-    "board_code": "MI-RN",
-    "name": "Miguel Sanchez",
-    "status": "renewed"
-  },
-  {
-    "date": "2024-08-15",
-    "license_number": "LIC-695407",
-    "board_code": "NC-RN",
-    "name": "Roberto Mendoza",
-    "status": "expired"
-  },
-  {
-    "date": "2024-12-02",
-    "license_number": "LIC-589881",
-    "board_code": "TX-LPN",
-    "name": "Pedro Ramirez",
-    "status": "active"
-  },
-  {
-    "date": "2024-02-19",
-    "license_number": "LIC-377659",
-    "board_code": "MI-LPN",
-    "name": "Alejandro Ruiz",
-    "status": "renewed"
-  },
-  {
-    "date": "2024-01-06",
-    "license_number": "LIC-858532",
-    "board_code": "PA-RN",
-    "name": "Gabriela Moreno",
-    "status": "expired"
-  },
-  {
-    "date": "2024-09-07",
-    "license_number": "LIC-360751",
-    "board_code": "PA-RN",
-    "name": "Diego Castillo",
-    "status": "active"
-  },
-  {
-    "date": "2025-04-18",
-    "license_number": "LIC-113252",
-    "board_code": "OH-LPN",
-    "name": "Carlos Lopez",
-    "status": "active"
-  },
-  {
-    "date": "2024-06-06",
-    "license_number": "LIC-220667",
-    "board_code": "PA-RN",
-    "name": "Victor Soto",
-    "status": "renewed"
-  },
-  {
-    "date": "2024-03-26",
-    "license_number": "LIC-953530",
-    "board_code": "IL-RN",
-    "name": "Sofia Hernandez",
-    "status": "active"
-  },
-  {
-    "date": "2024-05-13",
-    "license_number": "LIC-113219",
-    "board_code": "NC-RN",
-    "name": "David Morales",
-    "status": "active"
-  },
-  {
-    "date": "2025-11-03",
-    "license_number": "LIC-698340",
-    "board_code": "TX-RN",
-    "name": "Angela Rios",
-    "status": "renewed"
-  },
-  {
-    "date": "2024-08-01",
-    "license_number": "LIC-443336",
-    "board_code": "FL-RN",
-    "name": "Gabriela Moreno",
-    "status": "expired"
-  },
-  {
-    "date": "2024-01-02",
-    "license_number": "LIC-493099",
-    "board_code": "GA-LPN",
-    "name": "Ricardo Medina",
-    "status": "active"
-  },
-  {
-    "date": "2025-04-12",
-    "license_number": "LIC-779541",
-    "board_code": "FL-LPN",
-    "name": "Sebastian Pena",
-    "status": "active"
-  },
-  {
-    "date": "2024-11-25",
-    "license_number": "LIC-356619",
-    "board_code": "PA-RN",
-    "name": "Elena Rodriguez",
-    "status": "active"
-  },
-  {
-    "date": "2024-11-18",
-    "license_number": "LIC-754621",
-    "board_code": "CA-LPN",
-    "name": "Angela Rios",
-    "status": "active"
-  },
-  {
-    "date": "2025-11-14",
-    "license_number": "LIC-722624",
-    "board_code": "GA-RN",
-    "name": "Maria Garcia",
-    "status": "expired"
-  },
-  {
-    "date": "2025-09-25",
-    "license_number": "LIC-653646",
-    "board_code": "PA-RN",
-    "name": "Daniel Jimenez",
-    "status": "active"
-  },
-  {
-    "date": "2025-07-19",
-    "license_number": "LIC-752411",
-    "board_code": "OH-LPN",
-    "name": "Ricardo Medina",
-    "status": "pending"
-  },
-  {
-    "date": "2024-04-29",
-    "license_number": "LIC-160932",
-    "board_code": "FL-RN",
-    "name": "Natalia Guerrero",
-    "status": "expired"
-  },
-  {
-    "date": "2026-01-28",
-    "license_number": "LIC-921066",
-    "board_code": "MI-LPN",
-    "name": "Miguel Sanchez",
-    "status": "renewed"
-  },
-  {
-    "date": "2024-05-30",
-    "license_number": "LIC-939216",
-    "board_code": "OH-RN",
-    "name": "Miguel Sanchez",
-    "status": "expired"
-  },
-  {
-    "date": "2025-06-28",
-    "license_number": "LIC-456021",
-    "board_code": "NC-RN",
-    "name": "Laura Diaz",
-    "status": "active"
-  },
-  {
-    "date": "2025-09-24",
-    "license_number": "LIC-454030",
-    "board_code": "NC-RN",
-    "name": "Fernando Reyes",
-    "status": "active"
-  },
-  {
-    "date": "2025-02-26",
-    "license_number": "LIC-493044",
-    "board_code": "PA-LPN",
-    "name": "Mariana Alvarez",
-    "status": "active"
-  },
-  {
-    "date": "2024-03-17",
-    "license_number": "LIC-194138",
-    "board_code": "TX-LPN",
-    "name": "Natalia Guerrero",
-    "status": "suspended"
-  },
-  {
-    "date": "2025-10-15",
-    "license_number": "LIC-554141",
-    "board_code": "FL-LPN",
-    "name": "Valentina Cruz",
-    "status": "expired"
-  },
-  {
-    "date": "2025-06-26",
-    "license_number": "LIC-967256",
-    "board_code": "IL-RN",
-    "name": "Ricardo Medina",
-    "status": "active"
-  },
-  {
-    "date": "2024-01-25",
-    "license_number": "LIC-423425",
-    "board_code": "PA-RN",
-    "name": "Fernando Reyes",
-    "status": "renewed"
-  },
-  {
-    "date": "2024-10-04",
-    "license_number": "LIC-934426",
-    "board_code": "NY-LPN",
-    "name": "Carolina Aguilar",
-    "status": "expired"
-  },
-  {
-    "date": "2024-05-21",
-    "license_number": "LIC-674944",
-    "board_code": "PA-LPN",
-    "name": "Laura Diaz",
-    "status": "active"
-  },
-  {
-    "date": "2024-01-03",
-    "license_number": "LIC-155798",
-    "board_code": "CA-LPN",
-    "name": "Isabella Flores",
-    "status": "active"
-  },
-  {
-    "date": "2025-03-30",
-    "license_number": "LIC-105370",
-    "board_code": "CA-RN",
-    "name": "Jorge Torres",
-    "status": "renewed"
-  },
-  {
-    "date": "2024-07-05",
-    "license_number": "LIC-689796",
-    "board_code": "OH-LPN",
-    "name": "Sofia Hernandez",
-    "status": "active"
-  },
-  {
-    "date": "2024-03-26",
-    "license_number": "LIC-850028",
-    "board_code": "OH-RN",
-    "name": "Carolina Aguilar",
-    "status": "active"
-  },
-  {
-    "date": "2024-07-08",
-    "license_number": "LIC-243444",
-    "board_code": "NY-RN",
-    "name": "Mariana Alvarez",
-    "status": "expired"
-  },
-  {
-    "date": "2024-06-08",
-    "license_number": "LIC-481760",
-    "board_code": "CA-LPN",
-    "name": "Natalia Guerrero",
-    "status": "active"
-  },
-  {
-    "date": "2025-01-13",
-    "license_number": "LIC-160949",
-    "board_code": "GA-RN",
-    "name": "Daniel Jimenez",
-    "status": "expired"
-  },
-  {
-    "date": "2025-04-28",
-    "license_number": "LIC-931928",
-    "board_code": "OH-LPN",
-    "name": "Sebastian Pena",
-    "status": "expired"
-  },
-  {
-    "date": "2025-02-10",
-    "license_number": "LIC-531001",
-    "board_code": "MI-LPN",
-    "name": "Paula Gutierrez",
-    "status": "pending"
-  },
-  {
-    "date": "2024-04-13",
-    "license_number": "LIC-631204",
-    "board_code": "NY-RN",
-    "name": "Paula Gutierrez",
-    "status": "active"
-  },
-  {
-    "date": "2025-01-21",
-    "license_number": "LIC-169322",
-    "board_code": "PA-LPN",
-    "name": "Victor Soto",
-    "status": "expired"
-  },
-  {
-    "date": "2025-11-21",
-    "license_number": "LIC-852174",
-    "board_code": "PA-LPN",
-    "name": "Isabella Flores",
-    "status": "renewed"
-  },
-  {
-    "date": "2024-04-06",
-    "license_number": "LIC-659174",
-    "board_code": "OH-RN",
-    "name": "Camila Ortiz",
-    "status": "active"
-  },
-  {
-    "date": "2025-09-15",
-    "license_number": "LIC-790840",
-    "board_code": "CA-LPN",
-    "name": "Natalia Guerrero",
-    "status": "pending"
-  },
-  {
-    "date": "2024-01-26",
-    "license_number": "LIC-467246",
-    "board_code": "IL-RN",
-    "name": "Isabella Flores",
-    "status": "active"
-  },
-  {
-    "date": "2025-04-06",
-    "license_number": "LIC-900423",
-    "board_code": "CA-RN",
-    "name": "Natalia Guerrero",
-    "status": "active"
-  },
-  {
-    "date": "2024-02-02",
-    "license_number": "LIC-157420",
-    "board_code": "CA-RN",
-    "name": "Laura Diaz",
-    "status": "active"
-  },
-  {
-    "date": "2024-10-11",
-    "license_number": "LIC-811161",
-    "board_code": "CA-LPN",
-    "name": "Ricardo Medina",
-    "status": "active"
-  },
-  {
-    "date": "2024-05-03",
-    "license_number": "LIC-334777",
-    "board_code": "NC-LPN",
-    "name": "Ricardo Medina",
-    "status": "active"
-  },
-  {
-    "date": "2024-07-31",
-    "license_number": "LIC-884064",
-    "board_code": "NC-RN",
-    "name": "Lucia Romero",
-    "status": "pending"
-  },
-  {
-    "date": "2025-07-14",
-    "license_number": "LIC-126241",
-    "board_code": "NY-LPN",
-    "name": "Sebastian Pena",
-    "status": "active"
-  },
-  {
-    "date": "2026-01-03",
-    "license_number": "LIC-801213",
-    "board_code": "MI-RN",
-    "name": "Lucia Romero",
-    "status": "active"
-  },
-  {
-    "date": "2024-08-09",
-    "license_number": "LIC-280436",
-    "board_code": "NY-RN",
-    "name": "Carolina Aguilar",
-    "status": "expired"
-  },
-  {
-    "date": "2025-08-12",
-    "license_number": "LIC-486753",
-    "board_code": "IL-LPN",
-    "name": "Maria Garcia",
-    "status": "active"
-  },
-  {
-    "date": "2025-01-31",
-    "license_number": "LIC-327658",
-    "board_code": "PA-LPN",
-    "name": "Sebastian Pena",
-    "status": "renewed"
-  },
-  {
-    "date": "2025-07-03",
-    "license_number": "LIC-698782",
-    "board_code": "NC-LPN",
-    "name": "Maria Garcia",
-    "status": "active"
-  },
-  {
-    "date": "2024-05-08",
-    "license_number": "LIC-200135",
-    "board_code": "NC-LPN",
-    "name": "Jorge Torres",
-    "status": "expired"
-  },
-  {
-    "date": "2025-03-25",
-    "license_number": "LIC-134455",
-    "board_code": "NY-LPN",
-    "name": "David Morales",
-    "status": "active"
-  },
-  {
-    "date": "2025-05-28",
-    "license_number": "LIC-921052",
-    "board_code": "PA-RN",
-    "name": "Lucia Romero",
-    "status": "active"
-  },
-  {
-    "date": "2025-07-16",
-    "license_number": "LIC-803095",
-    "board_code": "MI-LPN",
-    "name": "Diego Castillo",
-    "status": "active"
-  },
-  {
-    "date": "2024-01-03",
-    "license_number": "LIC-230371",
-    "board_code": "GA-RN",
-    "name": "Laura Diaz",
-    "status": "active"
-  },
-  {
-    "date": "2025-09-17",
-    "license_number": "LIC-902820",
-    "board_code": "MI-LPN",
-    "name": "Andres Vargas",
-    "status": "active"
-  },
-  {
-    "date": "2025-03-05",
-    "license_number": "LIC-429365",
-    "board_code": "MI-RN",
-    "name": "Gabriela Moreno",
-    "status": "pending"
-  },
-  {
-    "date": "2024-07-07",
-    "license_number": "LIC-561589",
-    "board_code": "OH-LPN",
-    "name": "Daniel Jimenez",
-    "status": "pending"
-  },
-  {
-    "date": "2024-06-22",
-    "license_number": "LIC-474020",
-    "board_code": "IL-LPN",
-    "name": "Laura Diaz",
-    "status": "active"
-  },
-  {
-    "date": "2024-04-21",
-    "license_number": "LIC-114614",
-    "board_code": "GA-RN",
-    "name": "Ana Martinez",
-    "status": "expired"
-  },
-  {
-    "date": "2025-01-09",
-    "license_number": "LIC-989930",
-    "board_code": "FL-RN",
-    "name": "Daniel Jimenez",
-    "status": "active"
-  },
-  {
-    "date": "2024-06-10",
-    "license_number": "LIC-184392",
-    "board_code": "TX-RN",
-    "name": "Isabella Flores",
-    "status": "pending"
-  },
-  {
-    "date": "2025-02-19",
-    "license_number": "LIC-286536",
-    "board_code": "TX-RN",
-    "name": "Mariana Alvarez",
-    "status": "active"
-  },
-  {
-    "date": "2025-12-11",
-    "license_number": "LIC-884819",
-    "board_code": "FL-RN",
-    "name": "Alejandro Ruiz",
-    "status": "expired"
-  },
-  {
-    "date": "2025-06-14",
-    "license_number": "LIC-174055",
-    "board_code": "OH-RN",
-    "name": "David Morales",
-    "status": "renewed"
-  },
-  {
-    "date": "2025-03-21",
-    "license_number": "LIC-985373",
-    "board_code": "MI-RN",
-    "name": "Maria Garcia",
-    "status": "active"
-  },
-  {
-    "date": "2025-09-30",
-    "license_number": "LIC-960937",
-    "board_code": "IL-RN",
-    "name": "Valentina Cruz",
-    "status": "expired"
-  },
-  {
-    "date": "2024-01-27",
-    "license_number": "LIC-875259",
-    "board_code": "FL-LPN",
-    "name": "Victor Soto",
-    "status": "active"
-  },
-  {
-    "date": "2024-06-20",
-    "license_number": "LIC-952682",
-    "board_code": "OH-RN",
-    "name": "Camila Ortiz",
-    "status": "expired"
-  },
-  {
-    "date": "2024-01-06",
-    "license_number": "LIC-706903",
-    "board_code": "OH-RN",
-    "name": "Victor Soto",
-    "status": "active"
-  },
-  {
-    "date": "2025-10-29",
-    "license_number": "LIC-149309",
-    "board_code": "FL-RN",
-    "name": "Carolina Aguilar",
-    "status": "expired"
-  },
-  {
-    "date": "2024-02-19",
-    "license_number": "LIC-191541",
-    "board_code": "GA-LPN",
-    "name": "Carolina Aguilar",
-    "status": "active"
-  },
-  {
-    "date": "2024-01-11",
-    "license_number": "LIC-410243",
-    "board_code": "PA-RN",
-    "name": "Natalia Guerrero",
-    "status": "active"
-  },
-  {
-    "date": "2024-12-26",
-    "license_number": "LIC-604381",
-    "board_code": "TX-RN",
-    "name": "Paula Gutierrez",
-    "status": "suspended"
-  },
-  {
-    "date": "2024-03-19",
-    "license_number": "LIC-789662",
-    "board_code": "PA-LPN",
-    "name": "David Morales",
-    "status": "active"
-  },
-  {
-    "date": "2025-10-16",
-    "license_number": "LIC-921882",
-    "board_code": "MI-LPN",
-    "name": "Gabriela Moreno",
-    "status": "expired"
-  },
-  {
-    "date": "2025-05-14",
-    "license_number": "LIC-258577",
-    "board_code": "CA-RN",
-    "name": "Roberto Mendoza",
-    "status": "pending"
-  },
-  {
-    "date": "2025-03-13",
-    "license_number": "LIC-584213",
-    "board_code": "NC-LPN",
-    "name": "Lucia Romero",
-    "status": "active"
-  },
-  {
-    "date": "2024-05-20",
-    "license_number": "LIC-783426",
-    "board_code": "TX-LPN",
-    "name": "Roberto Mendoza",
-    "status": "pending"
-  },
-  {
-    "date": "2024-11-17",
-    "license_number": "LIC-985768",
-    "board_code": "CA-RN",
-    "name": "Camila Ortiz",
-    "status": "expired"
-  },
-  {
-    "date": "2025-03-07",
-    "license_number": "LIC-519439",
-    "board_code": "PA-LPN",
-    "name": "Lucia Romero",
-    "status": "active"
-  },
-  {
-    "date": "2024-12-08",
-    "license_number": "LIC-756467",
-    "board_code": "PA-LPN",
-    "name": "Pedro Ramirez",
-    "status": "renewed"
-  },
-  {
-    "date": "2024-11-15",
-    "license_number": "LIC-954455",
-    "board_code": "CA-RN",
-    "name": "Oscar Delgado",
-    "status": "active"
-  },
-  {
-    "date": "2024-05-25",
-    "license_number": "LIC-583121",
-    "board_code": "NC-RN",
-    "name": "Andres Vargas",
-    "status": "renewed"
-  },
-  {
-    "date": "2026-01-22",
-    "license_number": "LIC-944462",
-    "board_code": "OH-RN",
-    "name": "Lucia Romero",
-    "status": "renewed"
-  },
-  {
-    "date": "2025-03-02",
-    "license_number": "LIC-915426",
-    "board_code": "CA-RN",
-    "name": "Miguel Sanchez",
-    "status": "renewed"
-  },
-  {
-    "date": "2024-06-05",
-    "license_number": "LIC-905586",
-    "board_code": "NC-LPN",
-    "name": "Mariana Alvarez",
-    "status": "active"
-  },
-  {
-    "date": "2025-12-18",
-    "license_number": "LIC-458043",
-    "board_code": "TX-LPN",
-    "name": "Miguel Sanchez",
-    "status": "active"
-  },
-  {
-    "date": "2026-02-13",
-    "license_number": "LIC-468258",
-    "board_code": "TX-LPN",
-    "name": "Paula Gutierrez",
-    "status": "active"
-  },
-  {
-    "date": "2024-05-08",
-    "license_number": "LIC-232629",
-    "board_code": "IL-RN",
-    "name": "David Morales",
-    "status": "active"
-  },
-  {
-    "date": "2025-05-09",
-    "license_number": "LIC-938733",
-    "board_code": "PA-RN",
-    "name": "Gabriela Moreno",
-    "status": "active"
-  },
-  {
-    "date": "2024-12-04",
-    "license_number": "LIC-469243",
-    "board_code": "CA-RN",
-    "name": "Valentina Cruz",
-    "status": "expired"
-  },
-  {
-    "date": "2025-08-30",
-    "license_number": "LIC-378887",
-    "board_code": "NY-RN",
-    "name": "Daniel Jimenez",
-    "status": "pending"
-  },
-  {
-    "date": "2025-10-07",
-    "license_number": "LIC-534345",
-    "board_code": "FL-LPN",
-    "name": "Andres Vargas",
-    "status": "expired"
-  },
-  {
-    "date": "2024-11-14",
-    "license_number": "LIC-607772",
-    "board_code": "IL-LPN",
-    "name": "Laura Diaz",
-    "status": "pending"
-  },
-  {
-    "date": "2025-10-09",
-    "license_number": "LIC-544330",
-    "board_code": "FL-LPN",
-    "name": "Carlos Lopez",
-    "status": "active"
-  },
-  {
-    "date": "2025-02-14",
-    "license_number": "LIC-711390",
-    "board_code": "NY-RN",
-    "name": "Victor Soto",
-    "status": "active"
-  },
-  {
-    "date": "2025-04-23",
-    "license_number": "LIC-178060",
-    "board_code": "IL-LPN",
-    "name": "Maria Garcia",
-    "status": "active"
-  },
-  {
-    "date": "2025-07-19",
-    "license_number": "LIC-808399",
-    "board_code": "OH-RN",
-    "name": "Gabriela Moreno",
-    "status": "expired"
-  },
-  {
-    "date": "2024-01-26",
-    "license_number": "LIC-297171",
-    "board_code": "FL-RN",
-    "name": "Miguel Sanchez",
-    "status": "expired"
-  },
-  {
-    "date": "2024-04-18",
-    "license_number": "LIC-948782",
-    "board_code": "GA-RN",
-    "name": "Oscar Delgado",
-    "status": "expired"
-  },
-  {
-    "date": "2025-07-07",
-    "license_number": "LIC-676622",
-    "board_code": "NC-RN",
-    "name": "Mariana Alvarez",
-    "status": "pending"
-  },
-  {
-    "date": "2025-06-17",
-    "license_number": "LIC-533282",
-    "board_code": "TX-LPN",
-    "name": "Camila Ortiz",
-    "status": "active"
-  },
-  {
-    "date": "2024-11-20",
-    "license_number": "LIC-835952",
-    "board_code": "NC-LPN",
-    "name": "Sofia Hernandez",
-    "status": "renewed"
-  },
-  {
-    "date": "2025-07-21",
-    "license_number": "LIC-438677",
-    "board_code": "NC-LPN",
-    "name": "Valentina Cruz",
-    "status": "renewed"
-  },
-  {
-    "date": "2024-08-22",
-    "license_number": "LIC-548535",
-    "board_code": "GA-RN",
-    "name": "Pedro Ramirez",
-    "status": "suspended"
-  },
-  {
-    "date": "2025-01-01",
-    "license_number": "LIC-429845",
-    "board_code": "FL-LPN",
-    "name": "Ana Martinez",
-    "status": "expired"
-  },
-  {
-    "date": "2025-02-22",
-    "license_number": "LIC-333865",
-    "board_code": "NY-RN",
-    "name": "Ana Martinez",
-    "status": "suspended"
-  },
-  {
-    "date": "2025-10-18",
-    "license_number": "LIC-366220",
-    "board_code": "IL-RN",
-    "name": "Ricardo Medina",
-    "status": "active"
-  },
-  {
-    "date": "2025-04-12",
-    "license_number": "LIC-917295",
-    "board_code": "CA-LPN",
-    "name": "Carolina Aguilar",
-    "status": "expired"
-  },
-  {
-    "date": "2024-01-06",
-    "license_number": "LIC-596557",
-    "board_code": "OH-RN",
-    "name": "Oscar Delgado",
-    "status": "active"
-  },
-  {
-    "date": "2024-08-22",
-    "license_number": "LIC-504596",
-    "board_code": "CA-RN",
-    "name": "Gabriela Moreno",
-    "status": "active"
-  },
-  {
-    "date": "2024-10-05",
-    "license_number": "LIC-974274",
-    "board_code": "MI-RN",
-    "name": "Carlos Lopez",
-    "status": "renewed"
-  },
-  {
-    "date": "2024-07-19",
-    "license_number": "LIC-670204",
-    "board_code": "CA-LPN",
-    "name": "Alejandro Ruiz",
-    "status": "active"
-  },
-  {
-    "date": "2024-06-11",
-    "license_number": "LIC-342913",
-    "board_code": "IL-LPN",
-    "name": "Oscar Delgado",
-    "status": "active"
-  },
-  {
-    "date": "2025-08-05",
-    "license_number": "LIC-817704",
-    "board_code": "NC-RN",
-    "name": "Carlos Lopez",
-    "status": "active"
-  },
-  {
-    "date": "2025-11-15",
-    "license_number": "LIC-693411",
-    "board_code": "NC-LPN",
-    "name": "Elena Rodriguez",
-    "status": "renewed"
-  },
-  {
-    "date": "2025-12-13",
-    "license_number": "LIC-965688",
-    "board_code": "NY-LPN",
-    "name": "Roberto Mendoza",
-    "status": "active"
-  },
-  {
-    "date": "2025-04-11",
-    "license_number": "LIC-379998",
-    "board_code": "CA-LPN",
-    "name": "Ricardo Medina",
-    "status": "active"
-  },
-  {
-    "date": "2025-01-31",
-    "license_number": "LIC-837063",
-    "board_code": "TX-RN",
-    "name": "Carlos Lopez",
-    "status": "renewed"
-  },
-  {
-    "date": "2024-01-24",
-    "license_number": "LIC-625470",
-    "board_code": "IL-RN",
-    "name": "Oscar Delgado",
-    "status": "expired"
-  },
-  {
-    "date": "2025-05-08",
-    "license_number": "LIC-148548",
-    "board_code": "FL-LPN",
-    "name": "Camila Ortiz",
-    "status": "expired"
-  },
-  {
-    "date": "2024-03-16",
-    "license_number": "LIC-748486",
-    "board_code": "OH-LPN",
-    "name": "Sebastian Pena",
-    "status": "expired"
-  },
-  {
-    "date": "2025-05-05",
-    "license_number": "LIC-629160",
-    "board_code": "MI-LPN",
-    "name": "Angela Rios",
-    "status": "active"
-  },
-  {
-    "date": "2025-07-08",
-    "license_number": "LIC-617967",
-    "board_code": "MI-RN",
-    "name": "Sebastian Pena",
-    "status": "active"
-  },
-  {
-    "date": "2024-08-20",
-    "license_number": "LIC-731198",
-    "board_code": "FL-LPN",
-    "name": "Maria Garcia",
-    "status": "active"
-  },
-  {
-    "date": "2025-12-31",
-    "license_number": "LIC-634303",
-    "board_code": "GA-LPN",
-    "name": "Miguel Sanchez",
-    "status": "active"
-  },
-  {
-    "date": "2024-04-25",
-    "license_number": "LIC-230280",
-    "board_code": "PA-RN",
-    "name": "Fernando Reyes",
-    "status": "pending"
-  },
-  {
-    "date": "2025-08-02",
-    "license_number": "LIC-540815",
-    "board_code": "TX-RN",
-    "name": "Alejandro Ruiz",
-    "status": "active"
-  },
-  {
-    "date": "2025-10-09",
-    "license_number": "LIC-751553",
-    "board_code": "TX-LPN",
-    "name": "Carlos Lopez",
-    "status": "active"
-  },
-  {
-    "date": "2024-12-20",
-    "license_number": "LIC-767391",
-    "board_code": "OH-LPN",
-    "name": "Miguel Sanchez",
-    "status": "renewed"
-  },
-  {
-    "date": "2026-01-03",
-    "license_number": "LIC-797885",
-    "board_code": "GA-RN",
-    "name": "David Morales",
-    "status": "expired"
-  },
-  {
-    "date": "2025-09-27",
-    "license_number": "LIC-156945",
-    "board_code": "OH-RN",
-    "name": "Paula Gutierrez",
-    "status": "suspended"
-  },
-  {
-    "date": "2025-08-28",
-    "license_number": "LIC-944655",
-    "board_code": "TX-RN",
-    "name": "Carlos Lopez",
-    "status": "renewed"
-  },
-  {
-    "date": "2025-12-19",
-    "license_number": "LIC-359933",
-    "board_code": "MI-LPN",
-    "name": "Ana Martinez",
-    "status": "suspended"
-  },
-  {
-    "date": "2024-12-15",
-    "license_number": "LIC-662691",
-    "board_code": "IL-RN",
-    "name": "Lucia Romero",
-    "status": "expired"
-  },
-  {
-    "date": "2024-06-09",
-    "license_number": "LIC-260851",
-    "board_code": "MI-RN",
-    "name": "Lucia Romero",
-    "status": "expired"
-  },
-  {
-    "date": "2026-01-24",
-    "license_number": "LIC-790023",
-    "board_code": "GA-LPN",
-    "name": "Diego Castillo",
-    "status": "renewed"
-  },
-  {
-    "date": "2024-06-19",
-    "license_number": "LIC-255685",
-    "board_code": "CA-LPN",
-    "name": "Victor Soto",
-    "status": "expired"
-  },
-  {
-    "date": "2024-10-12",
-    "license_number": "LIC-919263",
-    "board_code": "OH-LPN",
-    "name": "Diego Castillo",
-    "status": "expired"
-  },
-  {
-    "date": "2025-07-20",
-    "license_number": "LIC-441261",
-    "board_code": "NY-LPN",
-    "name": "Ana Martinez",
-    "status": "expired"
-  },
-  {
-    "date": "2025-07-29",
-    "license_number": "LIC-548470",
-    "board_code": "PA-LPN",
-    "name": "Mariana Alvarez",
-    "status": "active"
-  },
-  {
-    "date": "2025-10-25",
-    "license_number": "LIC-636188",
-    "board_code": "OH-RN",
-    "name": "Carlos Lopez",
-    "status": "active"
-  },
-  {
-    "date": "2024-06-24",
-    "license_number": "LIC-999119",
-    "board_code": "GA-RN",
-    "name": "Natalia Guerrero",
-    "status": "active"
-  },
-  {
-    "date": "2025-07-20",
-    "license_number": "LIC-487014",
-    "board_code": "IL-LPN",
-    "name": "David Morales",
-    "status": "expired"
-  },
-  {
-    "date": "2025-12-18",
-    "license_number": "LIC-183096",
-    "board_code": "NY-LPN",
-    "name": "Sofia Hernandez",
-    "status": "active"
-  },
-  {
-    "date": "2025-08-22",
-    "license_number": "LIC-800751",
-    "board_code": "PA-LPN",
-    "name": "Daniel Jimenez",
-    "status": "active"
-  },
-  {
-    "date": "2026-02-08",
-    "license_number": "LIC-281667",
-    "board_code": "TX-LPN",
-    "name": "Carlos Lopez",
-    "status": "active"
-  },
-  {
-    "date": "2025-04-22",
-    "license_number": "LIC-644968",
-    "board_code": "MI-LPN",
-    "name": "Miguel Sanchez",
-    "status": "active"
-  },
-  {
-    "date": "2024-04-18",
-    "license_number": "LIC-815814",
-    "board_code": "PA-LPN",
-    "name": "Gabriela Moreno",
-    "status": "pending"
-  },
-  {
-    "date": "2024-11-09",
-    "license_number": "LIC-203689",
-    "board_code": "MI-LPN",
-    "name": "Carolina Aguilar",
-    "status": "pending"
-  },
-  {
-    "date": "2026-01-13",
-    "license_number": "LIC-200008",
-    "board_code": "TX-LPN",
-    "name": "Victor Soto",
-    "status": "active"
-  },
-  {
-    "date": "2025-12-02",
-    "license_number": "LIC-310517",
-    "board_code": "CA-RN",
-    "name": "Mariana Alvarez",
-    "status": "active"
-  },
-  {
-    "date": "2025-04-26",
-    "license_number": "LIC-368087",
-    "board_code": "FL-LPN",
-    "name": "Maria Garcia",
-    "status": "active"
-  },
-  {
-    "date": "2025-03-15",
-    "license_number": "LIC-877953",
-    "board_code": "NY-LPN",
-    "name": "Laura Diaz",
-    "status": "expired"
-  },
-  {
-    "date": "2025-12-29",
-    "license_number": "LIC-305115",
-    "board_code": "PA-LPN",
-    "name": "Diego Castillo",
-    "status": "renewed"
-  },
-  {
-    "date": "2024-08-18",
-    "license_number": "LIC-798046",
-    "board_code": "MI-RN",
-    "name": "Pedro Ramirez",
-    "status": "expired"
-  },
-  {
-    "date": "2025-12-08",
-    "license_number": "LIC-838638",
-    "board_code": "PA-LPN",
-    "name": "Angela Rios",
-    "status": "active"
-  },
-  {
-    "date": "2025-03-08",
-    "license_number": "LIC-819087",
-    "board_code": "PA-RN",
-    "name": "Jorge Torres",
-    "status": "active"
-  },
-  {
-    "date": "2024-11-11",
-    "license_number": "LIC-839879",
-    "board_code": "NY-RN",
-    "name": "Elena Rodriguez",
-    "status": "active"
-  },
-  {
-    "date": "2025-08-20",
-    "license_number": "LIC-500466",
-    "board_code": "IL-LPN",
-    "name": "Andres Vargas",
-    "status": "active"
-  },
-  {
-    "date": "2025-02-11",
-    "license_number": "LIC-773037",
-    "board_code": "TX-LPN",
-    "name": "Oscar Delgado",
-    "status": "pending"
-  },
-  {
-    "date": "2024-09-30",
-    "license_number": "LIC-558743",
-    "board_code": "GA-RN",
-    "name": "Ana Martinez",
-    "status": "active"
-  },
-  {
-    "date": "2024-05-17",
-    "license_number": "LIC-547685",
-    "board_code": "PA-LPN",
-    "name": "Isabella Flores",
-    "status": "pending"
-  },
-  {
-    "date": "2024-07-21",
-    "license_number": "LIC-203764",
-    "board_code": "GA-LPN",
-    "name": "Alejandro Ruiz",
-    "status": "expired"
-  },
-  {
-    "date": "2024-03-31",
-    "license_number": "LIC-276630",
-    "board_code": "GA-RN",
-    "name": "Lucia Romero",
-    "status": "pending"
-  },
-  {
-    "date": "2026-01-16",
-    "license_number": "LIC-929949",
-    "board_code": "MI-LPN",
-    "name": "Fernando Reyes",
-    "status": "expired"
-  },
-  {
-    "date": "2024-08-02",
-    "license_number": "LIC-964622",
-    "board_code": "IL-LPN",
-    "name": "Ana Martinez",
-    "status": "active"
-  },
-  {
-    "date": "2024-09-01",
-    "license_number": "LIC-253898",
-    "board_code": "NY-LPN",
-    "name": "Sebastian Pena",
-    "status": "renewed"
-  },
-  {
-    "date": "2025-03-10",
-    "license_number": "LIC-831369",
-    "board_code": "GA-RN",
-    "name": "Carlos Lopez",
-    "status": "renewed"
-  },
-  {
-    "date": "2025-10-04",
-    "license_number": "LIC-246474",
-    "board_code": "NY-RN",
-    "name": "Maria Garcia",
-    "status": "active"
-  },
-  {
-    "date": "2024-07-13",
-    "license_number": "LIC-818648",
-    "board_code": "MI-RN",
-    "name": "Natalia Guerrero",
-    "status": "expired"
-  },
-  {
-    "date": "2025-10-31",
-    "license_number": "LIC-743251",
-    "board_code": "MI-LPN",
-    "name": "Laura Diaz",
-    "status": "active"
-  },
-  {
-    "date": "2025-04-14",
-    "license_number": "LIC-168014",
-    "board_code": "IL-LPN",
-    "name": "Lucia Romero",
-    "status": "active"
-  },
-  {
-    "date": "2025-04-05",
-    "license_number": "LIC-956638",
-    "board_code": "NC-RN",
-    "name": "Maria Garcia",
-    "status": "active"
-  },
-  {
-    "date": "2025-07-28",
-    "license_number": "LIC-614669",
-    "board_code": "CA-LPN",
-    "name": "Alejandro Ruiz",
-    "status": "active"
-  },
-  {
-    "date": "2025-12-06",
-    "license_number": "LIC-326636",
-    "board_code": "NY-LPN",
-    "name": "Gabriela Moreno",
-    "status": "pending"
-  },
-  {
-    "date": "2024-09-08",
-    "license_number": "LIC-601075",
-    "board_code": "NY-RN",
-    "name": "Diego Castillo",
-    "status": "suspended"
-  },
-  {
-    "date": "2024-12-16",
-    "license_number": "LIC-450114",
-    "board_code": "NY-LPN",
-    "name": "Elena Rodriguez",
-    "status": "pending"
-  },
-  {
-    "date": "2024-01-30",
-    "license_number": "LIC-110692",
-    "board_code": "IL-RN",
-    "name": "Pedro Ramirez",
-    "status": "active"
-  },
-  {
-    "date": "2025-07-13",
-    "license_number": "LIC-443918",
-    "board_code": "NC-LPN",
-    "name": "Diego Castillo",
-    "status": "expired"
-  },
-  {
-    "date": "2025-01-23",
-    "license_number": "LIC-524777",
-    "board_code": "NY-LPN",
-    "name": "Mariana Alvarez",
-    "status": "active"
-  },
-  {
-    "date": "2025-11-18",
-    "license_number": "LIC-532682",
-    "board_code": "OH-LPN",
-    "name": "Gabriela Moreno",
-    "status": "active"
-  },
-  {
-    "date": "2024-11-27",
-    "license_number": "LIC-575241",
-    "board_code": "CA-LPN",
-    "name": "Maria Garcia",
-    "status": "renewed"
-  },
-  {
-    "date": "2026-01-24",
-    "license_number": "LIC-729400",
-    "board_code": "NY-LPN",
-    "name": "Ana Martinez",
-    "status": "active"
-  },
-  {
-    "date": "2025-10-19",
-    "license_number": "LIC-322326",
-    "board_code": "MI-RN",
-    "name": "Gabriela Moreno",
-    "status": "active"
-  },
-  {
-    "date": "2024-08-14",
-    "license_number": "LIC-275810",
-    "board_code": "GA-RN",
-    "name": "David Morales",
-    "status": "pending"
-  },
-  {
-    "date": "2025-03-05",
-    "license_number": "LIC-474600",
-    "board_code": "IL-LPN",
-    "name": "Camila Ortiz",
-    "status": "pending"
-  },
-  {
-    "date": "2024-07-07",
-    "license_number": "LIC-784023",
-    "board_code": "MI-LPN",
-    "name": "Elena Rodriguez",
-    "status": "expired"
-  },
-  {
-    "date": "2024-06-06",
-    "license_number": "LIC-845190",
-    "board_code": "IL-RN",
-    "name": "Victor Soto",
-    "status": "active"
-  },
-  {
-    "date": "2024-11-03",
-    "license_number": "LIC-288993",
-    "board_code": "NC-LPN",
-    "name": "Valentina Cruz",
-    "status": "active"
-  },
-  {
-    "date": "2024-11-06",
-    "license_number": "LIC-807996",
-    "board_code": "FL-RN",
-    "name": "Alejandro Ruiz",
-    "status": "expired"
-  },
-  {
-    "date": "2025-07-27",
-    "license_number": "LIC-242513",
-    "board_code": "NY-LPN",
-    "name": "Sofia Hernandez",
-    "status": "active"
-  },
-  {
-    "date": "2024-07-04",
-    "license_number": "LIC-789170",
-    "board_code": "PA-LPN",
-    "name": "Carlos Lopez",
-    "status": "active"
-  },
-  {
-    "date": "2025-08-02",
-    "license_number": "LIC-523220",
-    "board_code": "PA-LPN",
-    "name": "Andres Vargas",
-    "status": "renewed"
-  },
-  {
-    "date": "2024-01-28",
-    "license_number": "LIC-835406",
-    "board_code": "CA-LPN",
-    "name": "Isabella Flores",
-    "status": "active"
-  },
-  {
-    "date": "2025-12-25",
-    "license_number": "LIC-984254",
-    "board_code": "GA-RN",
-    "name": "Diego Castillo",
-    "status": "active"
-  },
-  {
-    "date": "2026-02-12",
-    "license_number": "LIC-966809",
-    "board_code": "IL-RN",
-    "name": "Victor Soto",
-    "status": "expired"
-  },
-  {
-    "date": "2024-11-23",
-    "license_number": "LIC-540855",
-    "board_code": "OH-RN",
-    "name": "Angela Rios",
-    "status": "pending"
-  },
-  {
-    "date": "2025-12-03",
-    "license_number": "LIC-866842",
-    "board_code": "MI-RN",
-    "name": "Andres Vargas",
-    "status": "active"
-  },
-  {
-    "date": "2024-06-30",
-    "license_number": "LIC-582205",
-    "board_code": "GA-RN",
-    "name": "David Morales",
-    "status": "active"
-  },
-  {
-    "date": "2024-05-24",
-    "license_number": "LIC-131392",
-    "board_code": "MI-LPN",
-    "name": "Carlos Lopez",
-    "status": "active"
-  },
-  {
-    "date": "2025-11-02",
-    "license_number": "LIC-578135",
-    "board_code": "IL-LPN",
-    "name": "Sebastian Pena",
-    "status": "renewed"
-  },
-  {
-    "date": "2024-10-13",
-    "license_number": "LIC-607528",
-    "board_code": "FL-RN",
-    "name": "Fernando Reyes",
-    "status": "renewed"
-  },
-  {
-    "date": "2024-12-04",
-    "license_number": "LIC-762184",
-    "board_code": "TX-LPN",
-    "name": "David Morales",
-    "status": "expired"
-  },
-  {
-    "date": "2025-12-10",
-    "license_number": "LIC-126642",
-    "board_code": "CA-RN",
-    "name": "Lucia Romero",
-    "status": "active"
-  },
-  {
-    "date": "2025-11-20",
-    "license_number": "LIC-685263",
-    "board_code": "OH-RN",
-    "name": "Ricardo Medina",
-    "status": "active"
-  },
-  {
-    "date": "2025-08-30",
-    "license_number": "LIC-633253",
-    "board_code": "MI-LPN",
-    "name": "Angela Rios",
-    "status": "pending"
-  },
-  {
-    "date": "2024-09-27",
-    "license_number": "LIC-988250",
-    "board_code": "OH-RN",
-    "name": "Pedro Ramirez",
-    "status": "expired"
-  },
-  {
-    "date": "2025-03-02",
-    "license_number": "LIC-335541",
-    "board_code": "CA-LPN",
-    "name": "Pedro Ramirez",
-    "status": "active"
-  },
-  {
-    "date": "2025-12-27",
-    "license_number": "LIC-345286",
-    "board_code": "FL-RN",
-    "name": "Angela Rios",
-    "status": "active"
-  },
-  {
-    "date": "2024-09-11",
-    "license_number": "LIC-106645",
-    "board_code": "NY-LPN",
-    "name": "Isabella Flores",
-    "status": "active"
-  },
-  {
-    "date": "2024-02-03",
-    "license_number": "LIC-746797",
-    "board_code": "NC-RN",
-    "name": "Fernando Reyes",
-    "status": "pending"
-  },
-  {
-    "date": "2025-03-28",
-    "license_number": "LIC-317422",
-    "board_code": "OH-LPN",
-    "name": "Natalia Guerrero",
-    "status": "renewed"
-  },
-  {
-    "date": "2025-09-17",
-    "license_number": "LIC-565994",
-    "board_code": "IL-RN",
-    "name": "Ricardo Medina",
-    "status": "expired"
-  },
-  {
-    "date": "2026-01-04",
-    "license_number": "LIC-299611",
-    "board_code": "NC-RN",
-    "name": "Natalia Guerrero",
-    "status": "suspended"
-  },
-  {
-    "date": "2024-06-25",
-    "license_number": "LIC-793166",
-    "board_code": "GA-LPN",
-    "name": "Daniel Jimenez",
-    "status": "active"
-  },
-  {
-    "date": "2025-03-09",
-    "license_number": "LIC-945114",
-    "board_code": "PA-LPN",
-    "name": "Angela Rios",
-    "status": "expired"
-  },
-  {
-    "date": "2025-01-14",
-    "license_number": "LIC-807536",
-    "board_code": "FL-LPN",
-    "name": "Roberto Mendoza",
-    "status": "expired"
-  },
-  {
-    "date": "2024-11-14",
-    "license_number": "LIC-314036",
-    "board_code": "MI-LPN",
-    "name": "Ana Martinez",
-    "status": "active"
-  },
-  {
-    "date": "2025-07-06",
-    "license_number": "LIC-240142",
-    "board_code": "PA-LPN",
-    "name": "Mariana Alvarez",
-    "status": "pending"
-  },
-  {
-    "date": "2025-09-19",
-    "license_number": "LIC-951133",
-    "board_code": "CA-LPN",
-    "name": "Daniel Jimenez",
-    "status": "active"
-  },
-  {
-    "date": "2024-10-15",
-    "license_number": "LIC-737524",
-    "board_code": "IL-LPN",
-    "name": "Ricardo Medina",
-    "status": "suspended"
-  },
-  {
-    "date": "2024-11-14",
-    "license_number": "LIC-621769",
-    "board_code": "PA-RN",
-    "name": "Oscar Delgado",
-    "status": "active"
-  },
-  {
-    "date": "2025-11-11",
-    "license_number": "LIC-922187",
-    "board_code": "GA-LPN",
-    "name": "Ana Martinez",
-    "status": "renewed"
-  },
-  {
-    "date": "2025-08-15",
-    "license_number": "LIC-230983",
-    "board_code": "PA-RN",
-    "name": "Sebastian Pena",
-    "status": "expired"
-  },
-  {
-    "date": "2025-07-28",
-    "license_number": "LIC-426471",
-    "board_code": "FL-LPN",
-    "name": "Jorge Torres",
-    "status": "active"
-  },
-  {
-    "date": "2025-01-22",
-    "license_number": "LIC-193993",
-    "board_code": "NC-RN",
-    "name": "Valentina Cruz",
-    "status": "active"
-  },
-  {
-    "date": "2025-03-27",
-    "license_number": "LIC-787318",
-    "board_code": "OH-LPN",
-    "name": "Oscar Delgado",
-    "status": "renewed"
-  },
-  {
-    "date": "2025-10-03",
-    "license_number": "LIC-236208",
-    "board_code": "TX-LPN",
-    "name": "Sofia Hernandez",
-    "status": "active"
-  },
-  {
-    "date": "2026-01-19",
-    "license_number": "LIC-536349",
-    "board_code": "FL-LPN",
-    "name": "Oscar Delgado",
-    "status": "pending"
-  },
-  {
-    "date": "2025-06-02",
-    "license_number": "LIC-482401",
-    "board_code": "NY-RN",
-    "name": "Gabriela Moreno",
-    "status": "active"
-  },
-  {
-    "date": "2025-08-22",
-    "license_number": "LIC-404529",
-    "board_code": "TX-RN",
-    "name": "Elena Rodriguez",
-    "status": "renewed"
-  },
-  {
-    "date": "2025-10-29",
-    "license_number": "LIC-752793",
-    "board_code": "NY-LPN",
-    "name": "Diego Castillo",
-    "status": "pending"
-  },
-  {
-    "date": "2024-05-12",
-    "license_number": "LIC-577986",
-    "board_code": "NC-RN",
-    "name": "Gabriela Moreno",
-    "status": "active"
-  },
-  {
-    "date": "2024-05-07",
-    "license_number": "LIC-831880",
-    "board_code": "NC-RN",
-    "name": "Carolina Aguilar",
-    "status": "active"
-  },
-  {
-    "date": "2025-12-10",
-    "license_number": "LIC-862813",
-    "board_code": "NC-RN",
-    "name": "Isabella Flores",
-    "status": "active"
-  },
-  {
-    "date": "2024-05-10",
-    "license_number": "LIC-296631",
-    "board_code": "NY-LPN",
-    "name": "Pedro Ramirez",
-    "status": "active"
-  },
-  {
-    "date": "2024-09-10",
-    "license_number": "LIC-868371",
-    "board_code": "PA-LPN",
-    "name": "Sofia Hernandez",
-    "status": "pending"
-  },
-  {
-    "date": "2025-05-18",
-    "license_number": "LIC-215837",
-    "board_code": "GA-LPN",
-    "name": "Miguel Sanchez",
-    "status": "active"
-  },
-  {
-    "date": "2025-12-22",
-    "license_number": "LIC-325979",
-    "board_code": "PA-RN",
-    "name": "Maria Garcia",
-    "status": "expired"
-  },
-  {
-    "date": "2025-06-05",
-    "license_number": "LIC-342894",
-    "board_code": "IL-RN",
-    "name": "Ricardo Medina",
-    "status": "pending"
-  },
-  {
-    "date": "2025-09-25",
-    "license_number": "LIC-725018",
-    "board_code": "OH-LPN",
-    "name": "Miguel Sanchez",
-    "status": "active"
-  },
-  {
-    "date": "2024-03-26",
-    "license_number": "LIC-963331",
-    "board_code": "CA-LPN",
-    "name": "Sofia Hernandez",
-    "status": "expired"
-  },
-  {
-    "date": "2024-03-16",
-    "license_number": "LIC-627451",
-    "board_code": "CA-LPN",
-    "name": "Ricardo Medina",
-    "status": "active"
-  },
-  {
-    "date": "2025-04-15",
-    "license_number": "LIC-513764",
-    "board_code": "OH-LPN",
-    "name": "Oscar Delgado",
-    "status": "active"
-  },
-  {
-    "date": "2024-07-26",
-    "license_number": "LIC-667166",
-    "board_code": "TX-RN",
-    "name": "Andres Vargas",
-    "status": "expired"
-  },
-  {
-    "date": "2025-10-16",
-    "license_number": "LIC-818640",
-    "board_code": "PA-LPN",
-    "name": "Mariana Alvarez",
-    "status": "active"
-  },
-  {
-    "date": "2024-03-25",
-    "license_number": "LIC-101422",
-    "board_code": "NY-RN",
-    "name": "Diego Castillo",
-    "status": "expired"
-  },
-  {
-    "date": "2025-03-23",
-    "license_number": "LIC-619252",
-    "board_code": "MI-LPN",
-    "name": "Jorge Torres",
-    "status": "active"
-  },
-  {
-    "date": "2025-03-23",
-    "license_number": "LIC-966373",
-    "board_code": "PA-LPN",
-    "name": "Pedro Ramirez",
-    "status": "active"
-  },
-  {
-    "date": "2024-01-23",
-    "license_number": "LIC-656361",
-    "board_code": "OH-RN",
-    "name": "Jorge Torres",
-    "status": "active"
-  },
-  {
-    "date": "2024-01-11",
-    "license_number": "LIC-333989",
-    "board_code": "NC-RN",
-    "name": "David Morales",
-    "status": "expired"
-  },
-  {
-    "date": "2025-10-29",
-    "license_number": "LIC-402667",
-    "board_code": "NC-LPN",
-    "name": "Roberto Mendoza",
-    "status": "active"
-  },
-  {
-    "date": "2024-10-03",
-    "license_number": "LIC-290593",
-    "board_code": "MI-LPN",
-    "name": "Alejandro Ruiz",
-    "status": "active"
-  },
-  {
-    "date": "2025-03-04",
-    "license_number": "LIC-224053",
-    "board_code": "NY-LPN",
-    "name": "Valentina Cruz",
-    "status": "active"
-  },
-  {
-    "date": "2025-05-08",
-    "license_number": "LIC-518456",
-    "board_code": "OH-RN",
-    "name": "Fernando Reyes",
-    "status": "active"
-  },
-  {
-    "date": "2025-12-16",
-    "license_number": "LIC-792481",
-    "board_code": "IL-LPN",
-    "name": "Daniel Jimenez",
-    "status": "pending"
-  },
-  {
-    "date": "2024-10-29",
-    "license_number": "LIC-589050",
-    "board_code": "NY-LPN",
-    "name": "Andres Vargas",
-    "status": "active"
-  },
-  {
-    "date": "2025-03-31",
-    "license_number": "LIC-730843",
-    "board_code": "NC-RN",
-    "name": "Laura Diaz",
-    "status": "active"
-  },
-  {
-    "date": "2025-09-30",
-    "license_number": "LIC-338031",
-    "board_code": "NC-LPN",
-    "name": "Laura Diaz",
-    "status": "active"
-  },
-  {
-    "date": "2024-08-10",
-    "license_number": "LIC-855295",
-    "board_code": "CA-RN",
-    "name": "Jorge Torres",
-    "status": "active"
-  },
-  {
-    "date": "2025-05-28",
-    "license_number": "LIC-294883",
-    "board_code": "OH-LPN",
-    "name": "Carlos Lopez",
-    "status": "pending"
-  },
-  {
-    "date": "2024-09-23",
-    "license_number": "LIC-322399",
-    "board_code": "IL-LPN",
-    "name": "Mariana Alvarez",
-    "status": "active"
-  },
-  {
-    "date": "2026-01-31",
-    "license_number": "LIC-931293",
-    "board_code": "PA-LPN",
-    "name": "Lucia Romero",
-    "status": "active"
-  },
-  {
-    "date": "2025-08-14",
-    "license_number": "LIC-812309",
-    "board_code": "OH-LPN",
-    "name": "Camila Ortiz",
-    "status": "active"
-  },
-  {
-    "date": "2024-01-26",
-    "license_number": "LIC-133339",
-    "board_code": "FL-LPN",
-    "name": "Andres Vargas",
-    "status": "pending"
-  },
-  {
-    "date": "2025-08-11",
-    "license_number": "LIC-827899",
-    "board_code": "PA-LPN",
-    "name": "Oscar Delgado",
-    "status": "active"
-  },
-  {
-    "date": "2024-06-04",
-    "license_number": "LIC-615348",
-    "board_code": "PA-RN",
-    "name": "Isabella Flores",
-    "status": "active"
-  },
-  {
-    "date": "2024-09-07",
-    "license_number": "LIC-117263",
-    "board_code": "MI-LPN",
-    "name": "Victor Soto",
-    "status": "active"
-  },
-  {
-    "date": "2025-08-28",
-    "license_number": "LIC-251686",
-    "board_code": "NY-LPN",
-    "name": "Diego Castillo",
-    "status": "active"
-  },
-  {
-    "date": "2024-06-26",
-    "license_number": "LIC-203334",
-    "board_code": "MI-LPN",
-    "name": "Gabriela Moreno",
-    "status": "renewed"
-  },
-  {
-    "date": "2024-06-08",
-    "license_number": "LIC-351408",
-    "board_code": "TX-LPN",
-    "name": "Angela Rios",
-    "status": "expired"
-  },
-  {
-    "date": "2025-01-21",
-    "license_number": "LIC-379440",
-    "board_code": "FL-RN",
-    "name": "Miguel Sanchez",
-    "status": "expired"
-  },
-  {
-    "date": "2025-09-26",
-    "license_number": "LIC-675029",
-    "board_code": "MI-LPN",
-    "name": "Isabella Flores",
-    "status": "active"
-  },
-  {
-    "date": "2024-03-10",
-    "license_number": "LIC-310126",
-    "board_code": "OH-LPN",
-    "name": "Maria Garcia",
-    "status": "active"
-  },
-  {
-    "date": "2024-07-11",
-    "license_number": "LIC-742829",
-    "board_code": "NY-LPN",
-    "name": "Carlos Lopez",
-    "status": "pending"
-  },
-  {
-    "date": "2025-06-13",
-    "license_number": "LIC-860856",
-    "board_code": "CA-LPN",
-    "name": "Natalia Guerrero",
-    "status": "pending"
-  },
-  {
-    "date": "2024-05-08",
-    "license_number": "LIC-307620",
-    "board_code": "NC-LPN",
-    "name": "Fernando Reyes",
-    "status": "active"
-  },
-  {
-    "date": "2024-07-26",
-    "license_number": "LIC-466020",
-    "board_code": "NC-LPN",
-    "name": "Oscar Delgado",
-    "status": "active"
-  },
-  {
-    "date": "2024-04-21",
-    "license_number": "LIC-972748",
-    "board_code": "GA-LPN",
-    "name": "Oscar Delgado",
-    "status": "expired"
-  },
-  {
-    "date": "2025-02-10",
-    "license_number": "LIC-748047",
-    "board_code": "GA-RN",
-    "name": "Alejandro Ruiz",
-    "status": "active"
-  },
-  {
-    "date": "2025-07-12",
-    "license_number": "LIC-173478",
-    "board_code": "OH-LPN",
-    "name": "Maria Garcia",
-    "status": "renewed"
-  },
-  {
-    "date": "2024-04-03",
-    "license_number": "LIC-187361",
-    "board_code": "FL-RN",
-    "name": "Jorge Torres",
-    "status": "active"
-  },
-  {
-    "date": "2025-10-31",
-    "license_number": "LIC-333445",
-    "board_code": "FL-RN",
-    "name": "Ana Martinez",
-    "status": "expired"
-  },
-  {
-    "date": "2025-02-27",
-    "license_number": "LIC-758840",
-    "board_code": "PA-RN",
-    "name": "Elena Rodriguez",
-    "status": "active"
-  },
-  {
-    "date": "2024-06-05",
-    "license_number": "LIC-199013",
-    "board_code": "GA-RN",
-    "name": "Mariana Alvarez",
-    "status": "active"
-  },
-  {
-    "date": "2025-09-26",
-    "license_number": "LIC-705351",
-    "board_code": "IL-LPN",
-    "name": "Sebastian Pena",
-    "status": "expired"
-  },
-  {
-    "date": "2025-08-17",
-    "license_number": "LIC-955177",
-    "board_code": "PA-LPN",
-    "name": "Miguel Sanchez",
-    "status": "pending"
-  },
-  {
-    "date": "2025-03-21",
-    "license_number": "LIC-517606",
-    "board_code": "FL-RN",
-    "name": "Isabella Flores",
-    "status": "active"
-  },
-  {
-    "date": "2024-03-01",
-    "license_number": "LIC-674335",
-    "board_code": "NC-LPN",
-    "name": "Pedro Ramirez",
-    "status": "expired"
-  },
-  {
-    "date": "2025-03-07",
-    "license_number": "LIC-134156",
-    "board_code": "FL-RN",
-    "name": "Diego Castillo",
-    "status": "pending"
-  },
-  {
-    "date": "2024-09-06",
-    "license_number": "LIC-702512",
-    "board_code": "FL-LPN",
-    "name": "Carolina Aguilar",
-    "status": "expired"
-  },
-  {
-    "date": "2024-03-30",
-    "license_number": "LIC-196836",
-    "board_code": "IL-RN",
-    "name": "Lucia Romero",
-    "status": "active"
-  },
-  {
-    "date": "2025-08-09",
-    "license_number": "LIC-335994",
-    "board_code": "TX-RN",
-    "name": "Carlos Lopez",
-    "status": "expired"
-  },
-  {
-    "date": "2025-12-09",
-    "license_number": "LIC-614383",
-    "board_code": "NC-RN",
-    "name": "Carolina Aguilar",
-    "status": "active"
-  },
-  {
-    "date": "2024-07-31",
-    "license_number": "LIC-981521",
-    "board_code": "OH-RN",
-    "name": "Diego Castillo",
-    "status": "active"
-  },
-  {
-    "date": "2025-08-15",
-    "license_number": "LIC-830373",
-    "board_code": "IL-LPN",
-    "name": "Angela Rios",
-    "status": "active"
-  },
-  {
-    "date": "2024-04-21",
-    "license_number": "LIC-155375",
-    "board_code": "NC-RN",
-    "name": "Jorge Torres",
-    "status": "renewed"
-  },
-  {
-    "date": "2025-12-12",
-    "license_number": "LIC-339231",
-    "board_code": "NY-RN",
-    "name": "Jorge Torres",
-    "status": "active"
-  },
-  {
-    "date": "2025-10-24",
-    "license_number": "LIC-719386",
-    "board_code": "NY-LPN",
-    "name": "Andres Vargas",
-    "status": "active"
-  },
-  {
-    "date": "2025-02-28",
-    "license_number": "LIC-236589",
-    "board_code": "PA-RN",
-    "name": "Paula Gutierrez",
-    "status": "active"
-  },
-  {
-    "date": "2025-03-13",
-    "license_number": "LIC-897622",
-    "board_code": "MI-LPN",
-    "name": "Daniel Jimenez",
-    "status": "active"
-  },
-  {
-    "date": "2024-08-08",
-    "license_number": "LIC-505495",
-    "board_code": "PA-RN",
-    "name": "Fernando Reyes",
-    "status": "pending"
-  },
-  {
-    "date": "2024-11-16",
-    "license_number": "LIC-622301",
-    "board_code": "OH-RN",
-    "name": "Maria Garcia",
-    "status": "pending"
-  },
-  {
-    "date": "2024-05-28",
-    "license_number": "LIC-485614",
-    "board_code": "OH-RN",
-    "name": "Ana Martinez",
-    "status": "active"
-  },
-  {
-    "date": "2025-11-08",
-    "license_number": "LIC-342858",
-    "board_code": "IL-RN",
-    "name": "Mariana Alvarez",
-    "status": "pending"
-  },
-  {
-    "date": "2025-03-17",
-    "license_number": "LIC-274122",
-    "board_code": "CA-LPN",
-    "name": "Gabriela Moreno",
-    "status": "active"
-  },
-  {
-    "date": "2025-07-05",
-    "license_number": "LIC-713644",
-    "board_code": "TX-RN",
-    "name": "Ricardo Medina",
-    "status": "active"
-  },
-  {
-    "date": "2024-12-14",
-    "license_number": "LIC-248019",
-    "board_code": "GA-RN",
-    "name": "Carolina Aguilar",
-    "status": "expired"
-  },
-  {
-    "date": "2025-07-20",
-    "license_number": "LIC-915514",
-    "board_code": "IL-LPN",
-    "name": "Fernando Reyes",
-    "status": "active"
-  },
-  {
-    "date": "2025-07-05",
-    "license_number": "LIC-134558",
-    "board_code": "TX-RN",
-    "name": "Lucia Romero",
-    "status": "pending"
-  },
-  {
-    "date": "2025-12-02",
-    "license_number": "LIC-263376",
-    "board_code": "NY-RN",
-    "name": "Maria Garcia",
-    "status": "renewed"
-  },
-  {
-    "date": "2025-03-14",
-    "license_number": "LIC-390861",
-    "board_code": "NC-RN",
-    "name": "Jorge Torres",
-    "status": "pending"
-  },
-  {
-    "date": "2026-02-01",
-    "license_number": "LIC-120623",
-    "board_code": "FL-RN",
-    "name": "Victor Soto",
-    "status": "pending"
-  },
-  {
-    "date": "2025-01-24",
-    "license_number": "LIC-814888",
-    "board_code": "CA-LPN",
-    "name": "Gabriela Moreno",
-    "status": "active"
-  },
-  {
-    "date": "2025-09-12",
-    "license_number": "LIC-930154",
-    "board_code": "CA-RN",
-    "name": "Carolina Aguilar",
-    "status": "renewed"
-  },
-  {
-    "date": "2024-05-06",
-    "license_number": "LIC-348314",
-    "board_code": "FL-LPN",
-    "name": "Elena Rodriguez",
-    "status": "pending"
-  },
-  {
-    "date": "2025-08-09",
-    "license_number": "LIC-557738",
-    "board_code": "IL-LPN",
-    "name": "Pedro Ramirez",
-    "status": "active"
-  },
-  {
-    "date": "2025-09-11",
-    "license_number": "LIC-895171",
-    "board_code": "CA-RN",
-    "name": "Carolina Aguilar",
-    "status": "active"
-  },
-  {
-    "date": "2024-08-18",
-    "license_number": "LIC-198039",
-    "board_code": "TX-RN",
-    "name": "Pedro Ramirez",
-    "status": "active"
-  },
-  {
-    "date": "2025-08-04",
-    "license_number": "LIC-149032",
-    "board_code": "NC-RN",
-    "name": "Laura Diaz",
-    "status": "active"
-  },
-  {
-    "date": "2025-01-27",
-    "license_number": "LIC-431279",
-    "board_code": "PA-RN",
-    "name": "Roberto Mendoza",
-    "status": "pending"
-  },
-  {
-    "date": "2025-06-08",
-    "license_number": "LIC-998961",
-    "board_code": "TX-RN",
-    "name": "Elena Rodriguez",
-    "status": "active"
-  },
-  {
-    "date": "2025-07-03",
-    "license_number": "LIC-830055",
-    "board_code": "MI-LPN",
-    "name": "Sofia Hernandez",
-    "status": "expired"
-  },
-  {
-    "date": "2024-06-10",
-    "license_number": "LIC-399963",
-    "board_code": "NC-RN",
-    "name": "Andres Vargas",
-    "status": "pending"
-  },
-  {
-    "date": "2025-12-29",
-    "license_number": "LIC-681222",
-    "board_code": "TX-RN",
-    "name": "Daniel Jimenez",
-    "status": "pending"
-  },
-  {
-    "date": "2026-01-10",
-    "license_number": "LIC-608175",
-    "board_code": "TX-LPN",
-    "name": "David Morales",
-    "status": "active"
-  },
-  {
-    "date": "2025-11-30",
-    "license_number": "LIC-307209",
-    "board_code": "NC-LPN",
-    "name": "Paula Gutierrez",
-    "status": "active"
-  },
-  {
-    "date": "2025-02-23",
-    "license_number": "LIC-362459",
-    "board_code": "MI-LPN",
-    "name": "Isabella Flores",
-    "status": "pending"
-  },
-  {
-    "date": "2025-03-01",
-    "license_number": "LIC-649180",
-    "board_code": "NY-RN",
-    "name": "Valentina Cruz",
-    "status": "pending"
-  },
-  {
-    "date": "2025-09-02",
-    "license_number": "LIC-775803",
-    "board_code": "TX-LPN",
-    "name": "Camila Ortiz",
-    "status": "pending"
-  },
-  {
-    "date": "2024-03-12",
-    "license_number": "LIC-326918",
-    "board_code": "MI-LPN",
-    "name": "Andres Vargas",
-    "status": "active"
-  },
-  {
-    "date": "2025-07-08",
-    "license_number": "LIC-466478",
-    "board_code": "IL-LPN",
-    "name": "Ana Martinez",
-    "status": "renewed"
-  },
-  {
-    "date": "2024-07-04",
-    "license_number": "LIC-618751",
-    "board_code": "OH-LPN",
-    "name": "Diego Castillo",
-    "status": "pending"
-  },
-  {
-    "date": "2024-07-23",
-    "license_number": "LIC-462851",
-    "board_code": "TX-LPN",
-    "name": "Victor Soto",
-    "status": "active"
-  },
-  {
-    "date": "2024-04-01",
-    "license_number": "LIC-543745",
-    "board_code": "FL-RN",
-    "name": "Sofia Hernandez",
-    "status": "pending"
-  },
-  {
-    "date": "2024-08-01",
-    "license_number": "LIC-964493",
-    "board_code": "FL-RN",
-    "name": "Natalia Guerrero",
-    "status": "active"
-  },
-  {
-    "date": "2024-02-04",
-    "license_number": "LIC-775900",
-    "board_code": "TX-RN",
-    "name": "Pedro Ramirez",
-    "status": "renewed"
-  },
-  {
-    "date": "2024-03-06",
-    "license_number": "LIC-940944",
-    "board_code": "IL-LPN",
-    "name": "Ricardo Medina",
-    "status": "active"
-  },
-  {
-    "date": "2025-02-08",
-    "license_number": "LIC-451699",
-    "board_code": "PA-RN",
-    "name": "Mariana Alvarez",
-    "status": "expired"
-  },
-  {
-    "date": "2026-01-14",
-    "license_number": "LIC-272225",
-    "board_code": "NY-RN",
-    "name": "Angela Rios",
-    "status": "active"
-  },
-  {
-    "date": "2024-09-13",
-    "license_number": "LIC-724222",
-    "board_code": "NC-LPN",
-    "name": "Diego Castillo",
-    "status": "suspended"
-  },
-  {
-    "date": "2024-05-27",
-    "license_number": "LIC-269190",
-    "board_code": "GA-LPN",
-    "name": "Oscar Delgado",
-    "status": "active"
-  },
-  {
-    "date": "2025-11-24",
-    "license_number": "LIC-850546",
-    "board_code": "MI-LPN",
-    "name": "Elena Rodriguez",
-    "status": "renewed"
-  },
-  {
-    "date": "2024-07-30",
-    "license_number": "LIC-431057",
-    "board_code": "NC-LPN",
-    "name": "Elena Rodriguez",
-    "status": "expired"
-  },
-  {
-    "date": "2024-08-01",
-    "license_number": "LIC-681599",
-    "board_code": "PA-RN",
-    "name": "Paula Gutierrez",
-    "status": "active"
-  },
-  {
-    "date": "2025-09-15",
-    "license_number": "LIC-735274",
-    "board_code": "OH-LPN",
-    "name": "Laura Diaz",
-    "status": "active"
-  }
-]
+{"date": "2024-05-17", "license_number": "LIC-678335", "board_code": "NC-RN", "name": "Oscar Delgado", "status": "active"}
+{"date": "2024-04-27", "license_number": "LIC-743788", "board_code": "NY-RN", "name": "Oscar Delgado", "status": "active"}
+{"date": "2025-08-26", "license_number": "LIC-144371", "board_code": "OH-LPN", "name": "Valentina Cruz", "status": "active"}
+{"date": "2026-01-23", "license_number": "LIC-516084", "board_code": "IL-LPN", "name": "Jorge Torres", "status": "active"}
+{"date": "2024-08-28", "license_number": "LIC-664512", "board_code": "NY-RN", "name": "Lucia Romero", "status": "active"}
+{"date": "2024-11-09", "license_number": "LIC-894335", "board_code": "IL-RN", "name": "Victor Soto", "status": "active"}
+{"date": "2025-04-08", "license_number": "LIC-765304", "board_code": "MI-RN", "name": "Lucia Romero", "status": "pending"}
+{"date": "2024-09-06", "license_number": "LIC-273659", "board_code": "PA-LPN", "name": "Oscar Delgado", "status": "renewed"}
+{"date": "2024-10-24", "license_number": "LIC-352310", "board_code": "NY-RN", "name": "Maria Garcia", "status": "active"}
+{"date": "2025-05-10", "license_number": "LIC-216469", "board_code": "GA-LPN", "name": "Paula Gutierrez", "status": "active"}
+{"date": "2024-09-18", "license_number": "LIC-500239", "board_code": "CA-RN", "name": "Mariana Alvarez", "status": "renewed"}
+{"date": "2025-02-04", "license_number": "LIC-916724", "board_code": "NY-LPN", "name": "Mariana Alvarez", "status": "renewed"}
+{"date": "2024-10-18", "license_number": "LIC-808666", "board_code": "NC-LPN", "name": "Sebastian Pena", "status": "active"}
+{"date": "2025-05-04", "license_number": "LIC-422528", "board_code": "OH-LPN", "name": "Ricardo Medina", "status": "active"}
+{"date": "2024-05-24", "license_number": "LIC-118257", "board_code": "NY-LPN", "name": "Gabriela Moreno", "status": "pending"}
+{"date": "2025-07-14", "license_number": "LIC-941684", "board_code": "CA-RN", "name": "Alejandro Ruiz", "status": "active"}
+{"date": "2025-09-03", "license_number": "LIC-621046", "board_code": "CA-LPN", "name": "Gabriela Moreno", "status": "expired"}
+{"date": "2025-10-23", "license_number": "LIC-266757", "board_code": "GA-LPN", "name": "Paula Gutierrez", "status": "active"}
+{"date": "2025-12-19", "license_number": "LIC-219807", "board_code": "MI-RN", "name": "Mariana Alvarez", "status": "active"}
+{"date": "2025-04-06", "license_number": "LIC-849580", "board_code": "GA-RN", "name": "Pedro Ramirez", "status": "pending"}
+{"date": "2024-03-29", "license_number": "LIC-767161", "board_code": "MI-LPN", "name": "Carlos Lopez", "status": "suspended"}
+{"date": "2025-06-07", "license_number": "LIC-863881", "board_code": "GA-LPN", "name": "Daniel Jimenez", "status": "active"}
+{"date": "2025-07-22", "license_number": "LIC-382266", "board_code": "IL-LPN", "name": "Natalia Guerrero", "status": "active"}
+{"date": "2024-11-19", "license_number": "LIC-877338", "board_code": "PA-LPN", "name": "Camila Ortiz", "status": "expired"}
+{"date": "2025-04-13", "license_number": "LIC-189865", "board_code": "CA-LPN", "name": "Lucia Romero", "status": "renewed"}
+{"date": "2025-01-17", "license_number": "LIC-359599", "board_code": "CA-LPN", "name": "Natalia Guerrero", "status": "active"}
+{"date": "2024-10-17", "license_number": "LIC-313568", "board_code": "PA-RN", "name": "Sebastian Pena", "status": "expired"}
+{"date": "2025-11-22", "license_number": "LIC-450241", "board_code": "CA-LPN", "name": "Jorge Torres", "status": "active"}
+{"date": "2024-01-18", "license_number": "LIC-251636", "board_code": "FL-LPN", "name": "Jorge Torres", "status": "active"}
+{"date": "2024-04-07", "license_number": "LIC-726163", "board_code": "NY-LPN", "name": "Pedro Ramirez", "status": "suspended"}
+{"date": "2024-10-13", "license_number": "LIC-761185", "board_code": "GA-RN", "name": "Sebastian Pena", "status": "active"}
+{"date": "2025-09-09", "license_number": "LIC-741132", "board_code": "CA-LPN", "name": "Carlos Lopez", "status": "renewed"}
+{"date": "2024-01-07", "license_number": "LIC-148731", "board_code": "PA-RN", "name": "Gabriela Moreno", "status": "active"}
+{"date": "2025-11-08", "license_number": "LIC-811895", "board_code": "OH-RN", "name": "Elena Rodriguez", "status": "pending"}
+{"date": "2024-09-06", "license_number": "LIC-647730", "board_code": "GA-LPN", "name": "Diego Castillo", "status": "active"}
+{"date": "2025-09-11", "license_number": "LIC-294122", "board_code": "NC-RN", "name": "Fernando Reyes", "status": "active"}
+{"date": "2024-03-16", "license_number": "LIC-836576", "board_code": "NC-LPN", "name": "Jorge Torres", "status": "suspended"}
+{"date": "2024-09-06", "license_number": "LIC-756552", "board_code": "MI-RN", "name": "Sofia Hernandez", "status": "active"}
+{"date": "2025-09-09", "license_number": "LIC-911716", "board_code": "PA-RN", "name": "Pedro Ramirez", "status": "active"}
+{"date": "2025-06-12", "license_number": "LIC-304114", "board_code": "GA-LPN", "name": "Maria Garcia", "status": "expired"}
+{"date": "2024-12-29", "license_number": "LIC-210690", "board_code": "NY-RN", "name": "Victor Soto", "status": "active"}
+{"date": "2025-06-22", "license_number": "LIC-547573", "board_code": "CA-LPN", "name": "Miguel Sanchez", "status": "pending"}
+{"date": "2024-10-07", "license_number": "LIC-414509", "board_code": "PA-LPN", "name": "Mariana Alvarez", "status": "active"}
+{"date": "2024-05-11", "license_number": "LIC-912803", "board_code": "PA-LPN", "name": "Carlos Lopez", "status": "active"}
+{"date": "2025-11-14", "license_number": "LIC-482466", "board_code": "CA-LPN", "name": "Alejandro Ruiz", "status": "active"}
+{"date": "2024-12-29", "license_number": "LIC-350320", "board_code": "FL-RN", "name": "Victor Soto", "status": "renewed"}
+{"date": "2025-12-15", "license_number": "LIC-625225", "board_code": "IL-RN", "name": "Victor Soto", "status": "active"}
+{"date": "2025-08-22", "license_number": "LIC-330017", "board_code": "OH-LPN", "name": "Mariana Alvarez", "status": "active"}
+{"date": "2024-08-06", "license_number": "LIC-972487", "board_code": "NY-RN", "name": "Fernando Reyes", "status": "pending"}
+{"date": "2026-01-18", "license_number": "LIC-678853", "board_code": "MI-RN", "name": "Gabriela Moreno", "status": "pending"}
+{"date": "2025-06-06", "license_number": "LIC-537638", "board_code": "FL-RN", "name": "David Morales", "status": "active"}
+{"date": "2025-08-16", "license_number": "LIC-181786", "board_code": "MI-RN", "name": "Maria Garcia", "status": "pending"}
+{"date": "2025-01-14", "license_number": "LIC-903787", "board_code": "CA-LPN", "name": "Carlos Lopez", "status": "active"}
+{"date": "2026-01-29", "license_number": "LIC-713503", "board_code": "IL-LPN", "name": "Maria Garcia", "status": "active"}
+{"date": "2025-04-15", "license_number": "LIC-677120", "board_code": "NY-RN", "name": "Valentina Cruz", "status": "pending"}
+{"date": "2024-08-22", "license_number": "LIC-189955", "board_code": "GA-LPN", "name": "Ana Martinez", "status": "suspended"}
+{"date": "2024-04-08", "license_number": "LIC-108073", "board_code": "MI-LPN", "name": "Miguel Sanchez", "status": "expired"}
+{"date": "2025-06-25", "license_number": "LIC-176795", "board_code": "MI-LPN", "name": "Roberto Mendoza", "status": "active"}
+{"date": "2025-05-18", "license_number": "LIC-452253", "board_code": "PA-RN", "name": "Isabella Flores", "status": "active"}
+{"date": "2024-05-24", "license_number": "LIC-510531", "board_code": "TX-LPN", "name": "Elena Rodriguez", "status": "expired"}
+{"date": "2026-02-05", "license_number": "LIC-635862", "board_code": "NC-LPN", "name": "Paula Gutierrez", "status": "active"}
+{"date": "2025-07-23", "license_number": "LIC-346790", "board_code": "NC-RN", "name": "Ricardo Medina", "status": "expired"}
+{"date": "2024-11-14", "license_number": "LIC-627298", "board_code": "NY-LPN", "name": "Lucia Romero", "status": "active"}
+{"date": "2024-12-21", "license_number": "LIC-325262", "board_code": "NC-LPN", "name": "Roberto Mendoza", "status": "active"}
+{"date": "2025-10-19", "license_number": "LIC-243349", "board_code": "OH-LPN", "name": "Diego Castillo", "status": "active"}
+{"date": "2024-03-02", "license_number": "LIC-249758", "board_code": "IL-RN", "name": "Victor Soto", "status": "active"}
+{"date": "2025-01-11", "license_number": "LIC-767818", "board_code": "CA-LPN", "name": "Paula Gutierrez", "status": "expired"}
+{"date": "2025-07-14", "license_number": "LIC-350162", "board_code": "FL-LPN", "name": "Sebastian Pena", "status": "suspended"}
+{"date": "2024-12-16", "license_number": "LIC-836242", "board_code": "TX-RN", "name": "Andres Vargas", "status": "active"}
+{"date": "2025-04-11", "license_number": "LIC-950585", "board_code": "MI-RN", "name": "Elena Rodriguez", "status": "expired"}
+{"date": "2024-05-06", "license_number": "LIC-982222", "board_code": "NC-RN", "name": "Paula Gutierrez", "status": "active"}
+{"date": "2025-10-15", "license_number": "LIC-702827", "board_code": "IL-LPN", "name": "Miguel Sanchez", "status": "suspended"}
+{"date": "2026-01-15", "license_number": "LIC-499427", "board_code": "TX-LPN", "name": "Camila Ortiz", "status": "pending"}
+{"date": "2024-12-12", "license_number": "LIC-479737", "board_code": "FL-RN", "name": "Alejandro Ruiz", "status": "expired"}
+{"date": "2025-07-13", "license_number": "LIC-660412", "board_code": "CA-RN", "name": "Victor Soto", "status": "renewed"}
+{"date": "2025-12-20", "license_number": "LIC-381492", "board_code": "GA-LPN", "name": "Mariana Alvarez", "status": "expired"}
+{"date": "2024-01-24", "license_number": "LIC-297159", "board_code": "TX-RN", "name": "Sofia Hernandez", "status": "expired"}
+{"date": "2025-08-10", "license_number": "LIC-133889", "board_code": "PA-LPN", "name": "Diego Castillo", "status": "active"}
+{"date": "2025-12-23", "license_number": "LIC-962116", "board_code": "CA-LPN", "name": "Roberto Mendoza", "status": "active"}
+{"date": "2025-10-27", "license_number": "LIC-663712", "board_code": "IL-RN", "name": "Ana Martinez", "status": "active"}
+{"date": "2026-02-07", "license_number": "LIC-433770", "board_code": "PA-RN", "name": "Andres Vargas", "status": "renewed"}
+{"date": "2025-12-21", "license_number": "LIC-283987", "board_code": "GA-RN", "name": "David Morales", "status": "active"}
+{"date": "2025-05-17", "license_number": "LIC-384566", "board_code": "NY-LPN", "name": "Sebastian Pena", "status": "active"}
+{"date": "2025-12-13", "license_number": "LIC-767663", "board_code": "OH-RN", "name": "Sebastian Pena", "status": "expired"}
+{"date": "2024-08-22", "license_number": "LIC-521484", "board_code": "NY-LPN", "name": "Carolina Aguilar", "status": "active"}
+{"date": "2025-01-29", "license_number": "LIC-303200", "board_code": "GA-RN", "name": "Maria Garcia", "status": "expired"}
+{"date": "2025-08-21", "license_number": "LIC-785765", "board_code": "CA-LPN", "name": "Daniel Jimenez", "status": "renewed"}
+{"date": "2025-01-21", "license_number": "LIC-309049", "board_code": "MI-LPN", "name": "Sebastian Pena", "status": "suspended"}
+{"date": "2025-10-18", "license_number": "LIC-783180", "board_code": "FL-RN", "name": "Carolina Aguilar", "status": "active"}
+{"date": "2024-10-01", "license_number": "LIC-409682", "board_code": "OH-RN", "name": "Paula Gutierrez", "status": "suspended"}
+{"date": "2026-01-25", "license_number": "LIC-946016", "board_code": "NC-LPN", "name": "Pedro Ramirez", "status": "expired"}
+{"date": "2025-06-29", "license_number": "LIC-869406", "board_code": "MI-LPN", "name": "Miguel Sanchez", "status": "expired"}
+{"date": "2024-04-07", "license_number": "LIC-583800", "board_code": "CA-RN", "name": "Valentina Cruz", "status": "active"}
+{"date": "2024-05-02", "license_number": "LIC-723229", "board_code": "MI-RN", "name": "Daniel Jimenez", "status": "pending"}
+{"date": "2025-03-22", "license_number": "LIC-232264", "board_code": "PA-LPN", "name": "Isabella Flores", "status": "active"}
+{"date": "2025-07-01", "license_number": "LIC-496153", "board_code": "GA-LPN", "name": "Alejandro Ruiz", "status": "active"}
+{"date": "2024-11-20", "license_number": "LIC-229905", "board_code": "FL-LPN", "name": "Paula Gutierrez", "status": "renewed"}
+{"date": "2024-11-15", "license_number": "LIC-824437", "board_code": "MI-LPN", "name": "Valentina Cruz", "status": "pending"}
+{"date": "2025-04-26", "license_number": "LIC-104125", "board_code": "FL-RN", "name": "Oscar Delgado", "status": "active"}
+{"date": "2024-07-28", "license_number": "LIC-184110", "board_code": "NY-RN", "name": "Pedro Ramirez", "status": "pending"}
+{"date": "2024-07-30", "license_number": "LIC-392017", "board_code": "NY-RN", "name": "Lucia Romero", "status": "suspended"}
+{"date": "2025-01-01", "license_number": "LIC-763058", "board_code": "CA-RN", "name": "Carolina Aguilar", "status": "pending"}
+{"date": "2024-09-14", "license_number": "LIC-868254", "board_code": "IL-LPN", "name": "David Morales", "status": "active"}
+{"date": "2025-03-14", "license_number": "LIC-436906", "board_code": "NY-LPN", "name": "Daniel Jimenez", "status": "expired"}
+{"date": "2024-03-31", "license_number": "LIC-611410", "board_code": "TX-LPN", "name": "Ana Martinez", "status": "active"}
+{"date": "2025-06-04", "license_number": "LIC-867495", "board_code": "MI-LPN", "name": "Roberto Mendoza", "status": "renewed"}
+{"date": "2024-12-07", "license_number": "LIC-964861", "board_code": "NC-LPN", "name": "Jorge Torres", "status": "expired"}
+{"date": "2025-11-24", "license_number": "LIC-289949", "board_code": "OH-RN", "name": "Carlos Lopez", "status": "active"}
+{"date": "2025-02-28", "license_number": "LIC-340130", "board_code": "OH-RN", "name": "Mariana Alvarez", "status": "renewed"}
+{"date": "2024-01-23", "license_number": "LIC-935094", "board_code": "NY-LPN", "name": "Camila Ortiz", "status": "active"}
+{"date": "2024-09-07", "license_number": "LIC-287881", "board_code": "NC-RN", "name": "Oscar Delgado", "status": "active"}
+{"date": "2024-05-14", "license_number": "LIC-397717", "board_code": "CA-RN", "name": "Miguel Sanchez", "status": "active"}
+{"date": "2024-11-23", "license_number": "LIC-583463", "board_code": "FL-RN", "name": "Oscar Delgado", "status": "active"}
+{"date": "2026-01-30", "license_number": "LIC-888979", "board_code": "OH-RN", "name": "Sebastian Pena", "status": "renewed"}
+{"date": "2025-07-28", "license_number": "LIC-205202", "board_code": "MI-LPN", "name": "Lucia Romero", "status": "expired"}
+{"date": "2025-05-26", "license_number": "LIC-777060", "board_code": "OH-LPN", "name": "Daniel Jimenez", "status": "active"}
+{"date": "2025-08-08", "license_number": "LIC-673691", "board_code": "NC-RN", "name": "Andres Vargas", "status": "renewed"}
+{"date": "2025-12-28", "license_number": "LIC-695385", "board_code": "CA-LPN", "name": "Angela Rios", "status": "pending"}
+{"date": "2025-09-03", "license_number": "LIC-385210", "board_code": "FL-RN", "name": "Victor Soto", "status": "expired"}
+{"date": "2025-04-08", "license_number": "LIC-554950", "board_code": "CA-LPN", "name": "Maria Garcia", "status": "pending"}
+{"date": "2024-03-19", "license_number": "LIC-512780", "board_code": "NC-RN", "name": "Maria Garcia", "status": "renewed"}
+{"date": "2025-02-04", "license_number": "LIC-423342", "board_code": "NC-RN", "name": "Gabriela Moreno", "status": "active"}
+{"date": "2025-05-15", "license_number": "LIC-335814", "board_code": "NC-RN", "name": "Laura Diaz", "status": "active"}
+{"date": "2025-12-23", "license_number": "LIC-494568", "board_code": "MI-RN", "name": "Alejandro Ruiz", "status": "active"}
+{"date": "2024-07-10", "license_number": "LIC-859844", "board_code": "NC-LPN", "name": "Oscar Delgado", "status": "active"}
+{"date": "2024-09-25", "license_number": "LIC-957750", "board_code": "PA-RN", "name": "Diego Castillo", "status": "suspended"}
+{"date": "2024-10-01", "license_number": "LIC-116060", "board_code": "PA-LPN", "name": "Carolina Aguilar", "status": "expired"}
+{"date": "2024-06-20", "license_number": "LIC-616587", "board_code": "OH-LPN", "name": "Paula Gutierrez", "status": "active"}
+{"date": "2025-12-03", "license_number": "LIC-326494", "board_code": "NC-LPN", "name": "Sebastian Pena", "status": "active"}
+{"date": "2025-10-02", "license_number": "LIC-803420", "board_code": "TX-LPN", "name": "David Morales", "status": "active"}
+{"date": "2024-12-19", "license_number": "LIC-165232", "board_code": "CA-RN", "name": "David Morales", "status": "renewed"}
+{"date": "2025-07-03", "license_number": "LIC-485681", "board_code": "FL-LPN", "name": "Sebastian Pena", "status": "active"}
+{"date": "2025-06-06", "license_number": "LIC-599411", "board_code": "IL-LPN", "name": "Natalia Guerrero", "status": "active"}
+{"date": "2026-01-29", "license_number": "LIC-397294", "board_code": "TX-LPN", "name": "Angela Rios", "status": "expired"}
+{"date": "2025-03-12", "license_number": "LIC-461908", "board_code": "GA-LPN", "name": "Sofia Hernandez", "status": "active"}
+{"date": "2025-03-06", "license_number": "LIC-515612", "board_code": "GA-RN", "name": "Ricardo Medina", "status": "active"}
+{"date": "2026-01-01", "license_number": "LIC-553424", "board_code": "NC-LPN", "name": "Paula Gutierrez", "status": "expired"}
+{"date": "2025-03-30", "license_number": "LIC-995261", "board_code": "NC-LPN", "name": "Natalia Guerrero", "status": "renewed"}
+{"date": "2024-07-06", "license_number": "LIC-368918", "board_code": "PA-LPN", "name": "Diego Castillo", "status": "active"}
+{"date": "2024-07-12", "license_number": "LIC-441842", "board_code": "FL-LPN", "name": "Gabriela Moreno", "status": "suspended"}
+{"date": "2024-08-28", "license_number": "LIC-956375", "board_code": "TX-LPN", "name": "Laura Diaz", "status": "renewed"}
+{"date": "2025-04-08", "license_number": "LIC-746939", "board_code": "NY-RN", "name": "Carlos Lopez", "status": "expired"}
+{"date": "2025-04-21", "license_number": "LIC-370469", "board_code": "OH-RN", "name": "Andres Vargas", "status": "pending"}
+{"date": "2024-01-01", "license_number": "LIC-176652", "board_code": "MI-RN", "name": "Victor Soto", "status": "active"}
+{"date": "2024-09-03", "license_number": "LIC-171281", "board_code": "FL-LPN", "name": "Ricardo Medina", "status": "suspended"}
+{"date": "2024-03-02", "license_number": "LIC-418116", "board_code": "MI-RN", "name": "Miguel Sanchez", "status": "renewed"}
+{"date": "2024-08-15", "license_number": "LIC-695407", "board_code": "NC-RN", "name": "Roberto Mendoza", "status": "expired"}
+{"date": "2024-12-02", "license_number": "LIC-589881", "board_code": "TX-LPN", "name": "Pedro Ramirez", "status": "active"}
+{"date": "2024-02-19", "license_number": "LIC-377659", "board_code": "MI-LPN", "name": "Alejandro Ruiz", "status": "renewed"}
+{"date": "2024-01-06", "license_number": "LIC-858532", "board_code": "PA-RN", "name": "Gabriela Moreno", "status": "expired"}
+{"date": "2024-09-07", "license_number": "LIC-360751", "board_code": "PA-RN", "name": "Diego Castillo", "status": "active"}
+{"date": "2025-04-18", "license_number": "LIC-113252", "board_code": "OH-LPN", "name": "Carlos Lopez", "status": "active"}
+{"date": "2024-06-06", "license_number": "LIC-220667", "board_code": "PA-RN", "name": "Victor Soto", "status": "renewed"}
+{"date": "2024-03-26", "license_number": "LIC-953530", "board_code": "IL-RN", "name": "Sofia Hernandez", "status": "active"}
+{"date": "2024-05-13", "license_number": "LIC-113219", "board_code": "NC-RN", "name": "David Morales", "status": "active"}
+{"date": "2025-11-03", "license_number": "LIC-698340", "board_code": "TX-RN", "name": "Angela Rios", "status": "renewed"}
+{"date": "2024-08-01", "license_number": "LIC-443336", "board_code": "FL-RN", "name": "Gabriela Moreno", "status": "expired"}
+{"date": "2024-01-02", "license_number": "LIC-493099", "board_code": "GA-LPN", "name": "Ricardo Medina", "status": "active"}
+{"date": "2025-04-12", "license_number": "LIC-779541", "board_code": "FL-LPN", "name": "Sebastian Pena", "status": "active"}
+{"date": "2024-11-25", "license_number": "LIC-356619", "board_code": "PA-RN", "name": "Elena Rodriguez", "status": "active"}
+{"date": "2024-11-18", "license_number": "LIC-754621", "board_code": "CA-LPN", "name": "Angela Rios", "status": "active"}
+{"date": "2025-11-14", "license_number": "LIC-722624", "board_code": "GA-RN", "name": "Maria Garcia", "status": "expired"}
+{"date": "2025-09-25", "license_number": "LIC-653646", "board_code": "PA-RN", "name": "Daniel Jimenez", "status": "active"}
+{"date": "2025-07-19", "license_number": "LIC-752411", "board_code": "OH-LPN", "name": "Ricardo Medina", "status": "pending"}
+{"date": "2024-04-29", "license_number": "LIC-160932", "board_code": "FL-RN", "name": "Natalia Guerrero", "status": "expired"}
+{"date": "2026-01-28", "license_number": "LIC-921066", "board_code": "MI-LPN", "name": "Miguel Sanchez", "status": "renewed"}
+{"date": "2024-05-30", "license_number": "LIC-939216", "board_code": "OH-RN", "name": "Miguel Sanchez", "status": "expired"}
+{"date": "2025-06-28", "license_number": "LIC-456021", "board_code": "NC-RN", "name": "Laura Diaz", "status": "active"}
+{"date": "2025-09-24", "license_number": "LIC-454030", "board_code": "NC-RN", "name": "Fernando Reyes", "status": "active"}
+{"date": "2025-02-26", "license_number": "LIC-493044", "board_code": "PA-LPN", "name": "Mariana Alvarez", "status": "active"}
+{"date": "2024-03-17", "license_number": "LIC-194138", "board_code": "TX-LPN", "name": "Natalia Guerrero", "status": "suspended"}
+{"date": "2025-10-15", "license_number": "LIC-554141", "board_code": "FL-LPN", "name": "Valentina Cruz", "status": "expired"}
+{"date": "2025-06-26", "license_number": "LIC-967256", "board_code": "IL-RN", "name": "Ricardo Medina", "status": "active"}
+{"date": "2024-01-25", "license_number": "LIC-423425", "board_code": "PA-RN", "name": "Fernando Reyes", "status": "renewed"}
+{"date": "2024-10-04", "license_number": "LIC-934426", "board_code": "NY-LPN", "name": "Carolina Aguilar", "status": "expired"}
+{"date": "2024-05-21", "license_number": "LIC-674944", "board_code": "PA-LPN", "name": "Laura Diaz", "status": "active"}
+{"date": "2024-01-03", "license_number": "LIC-155798", "board_code": "CA-LPN", "name": "Isabella Flores", "status": "active"}
+{"date": "2025-03-30", "license_number": "LIC-105370", "board_code": "CA-RN", "name": "Jorge Torres", "status": "renewed"}
+{"date": "2024-07-05", "license_number": "LIC-689796", "board_code": "OH-LPN", "name": "Sofia Hernandez", "status": "active"}
+{"date": "2024-03-26", "license_number": "LIC-850028", "board_code": "OH-RN", "name": "Carolina Aguilar", "status": "active"}
+{"date": "2024-07-08", "license_number": "LIC-243444", "board_code": "NY-RN", "name": "Mariana Alvarez", "status": "expired"}
+{"date": "2024-06-08", "license_number": "LIC-481760", "board_code": "CA-LPN", "name": "Natalia Guerrero", "status": "active"}
+{"date": "2025-01-13", "license_number": "LIC-160949", "board_code": "GA-RN", "name": "Daniel Jimenez", "status": "expired"}
+{"date": "2025-04-28", "license_number": "LIC-931928", "board_code": "OH-LPN", "name": "Sebastian Pena", "status": "expired"}
+{"date": "2025-02-10", "license_number": "LIC-531001", "board_code": "MI-LPN", "name": "Paula Gutierrez", "status": "pending"}
+{"date": "2024-04-13", "license_number": "LIC-631204", "board_code": "NY-RN", "name": "Paula Gutierrez", "status": "active"}
+{"date": "2025-01-21", "license_number": "LIC-169322", "board_code": "PA-LPN", "name": "Victor Soto", "status": "expired"}
+{"date": "2025-11-21", "license_number": "LIC-852174", "board_code": "PA-LPN", "name": "Isabella Flores", "status": "renewed"}
+{"date": "2024-04-06", "license_number": "LIC-659174", "board_code": "OH-RN", "name": "Camila Ortiz", "status": "active"}
+{"date": "2025-09-15", "license_number": "LIC-790840", "board_code": "CA-LPN", "name": "Natalia Guerrero", "status": "pending"}
+{"date": "2024-01-26", "license_number": "LIC-467246", "board_code": "IL-RN", "name": "Isabella Flores", "status": "active"}
+{"date": "2025-04-06", "license_number": "LIC-900423", "board_code": "CA-RN", "name": "Natalia Guerrero", "status": "active"}
+{"date": "2024-02-02", "license_number": "LIC-157420", "board_code": "CA-RN", "name": "Laura Diaz", "status": "active"}
+{"date": "2024-10-11", "license_number": "LIC-811161", "board_code": "CA-LPN", "name": "Ricardo Medina", "status": "active"}
+{"date": "2024-05-03", "license_number": "LIC-334777", "board_code": "NC-LPN", "name": "Ricardo Medina", "status": "active"}
+{"date": "2024-07-31", "license_number": "LIC-884064", "board_code": "NC-RN", "name": "Lucia Romero", "status": "pending"}
+{"date": "2025-07-14", "license_number": "LIC-126241", "board_code": "NY-LPN", "name": "Sebastian Pena", "status": "active"}
+{"date": "2026-01-03", "license_number": "LIC-801213", "board_code": "MI-RN", "name": "Lucia Romero", "status": "active"}
+{"date": "2024-08-09", "license_number": "LIC-280436", "board_code": "NY-RN", "name": "Carolina Aguilar", "status": "expired"}
+{"date": "2025-08-12", "license_number": "LIC-486753", "board_code": "IL-LPN", "name": "Maria Garcia", "status": "active"}
+{"date": "2025-01-31", "license_number": "LIC-327658", "board_code": "PA-LPN", "name": "Sebastian Pena", "status": "renewed"}
+{"date": "2025-07-03", "license_number": "LIC-698782", "board_code": "NC-LPN", "name": "Maria Garcia", "status": "active"}
+{"date": "2024-05-08", "license_number": "LIC-200135", "board_code": "NC-LPN", "name": "Jorge Torres", "status": "expired"}
+{"date": "2025-03-25", "license_number": "LIC-134455", "board_code": "NY-LPN", "name": "David Morales", "status": "active"}
+{"date": "2025-05-28", "license_number": "LIC-921052", "board_code": "PA-RN", "name": "Lucia Romero", "status": "active"}
+{"date": "2025-07-16", "license_number": "LIC-803095", "board_code": "MI-LPN", "name": "Diego Castillo", "status": "active"}
+{"date": "2024-01-03", "license_number": "LIC-230371", "board_code": "GA-RN", "name": "Laura Diaz", "status": "active"}
+{"date": "2025-09-17", "license_number": "LIC-902820", "board_code": "MI-LPN", "name": "Andres Vargas", "status": "active"}
+{"date": "2025-03-05", "license_number": "LIC-429365", "board_code": "MI-RN", "name": "Gabriela Moreno", "status": "pending"}
+{"date": "2024-07-07", "license_number": "LIC-561589", "board_code": "OH-LPN", "name": "Daniel Jimenez", "status": "pending"}
+{"date": "2024-06-22", "license_number": "LIC-474020", "board_code": "IL-LPN", "name": "Laura Diaz", "status": "active"}
+{"date": "2024-04-21", "license_number": "LIC-114614", "board_code": "GA-RN", "name": "Ana Martinez", "status": "expired"}
+{"date": "2025-01-09", "license_number": "LIC-989930", "board_code": "FL-RN", "name": "Daniel Jimenez", "status": "active"}
+{"date": "2024-06-10", "license_number": "LIC-184392", "board_code": "TX-RN", "name": "Isabella Flores", "status": "pending"}
+{"date": "2025-02-19", "license_number": "LIC-286536", "board_code": "TX-RN", "name": "Mariana Alvarez", "status": "active"}
+{"date": "2025-12-11", "license_number": "LIC-884819", "board_code": "FL-RN", "name": "Alejandro Ruiz", "status": "expired"}
+{"date": "2025-06-14", "license_number": "LIC-174055", "board_code": "OH-RN", "name": "David Morales", "status": "renewed"}
+{"date": "2025-03-21", "license_number": "LIC-985373", "board_code": "MI-RN", "name": "Maria Garcia", "status": "active"}
+{"date": "2025-09-30", "license_number": "LIC-960937", "board_code": "IL-RN", "name": "Valentina Cruz", "status": "expired"}
+{"date": "2024-01-27", "license_number": "LIC-875259", "board_code": "FL-LPN", "name": "Victor Soto", "status": "active"}
+{"date": "2024-06-20", "license_number": "LIC-952682", "board_code": "OH-RN", "name": "Camila Ortiz", "status": "expired"}
+{"date": "2024-01-06", "license_number": "LIC-706903", "board_code": "OH-RN", "name": "Victor Soto", "status": "active"}
+{"date": "2025-10-29", "license_number": "LIC-149309", "board_code": "FL-RN", "name": "Carolina Aguilar", "status": "expired"}
+{"date": "2024-02-19", "license_number": "LIC-191541", "board_code": "GA-LPN", "name": "Carolina Aguilar", "status": "active"}
+{"date": "2024-01-11", "license_number": "LIC-410243", "board_code": "PA-RN", "name": "Natalia Guerrero", "status": "active"}
+{"date": "2024-12-26", "license_number": "LIC-604381", "board_code": "TX-RN", "name": "Paula Gutierrez", "status": "suspended"}
+{"date": "2024-03-19", "license_number": "LIC-789662", "board_code": "PA-LPN", "name": "David Morales", "status": "active"}
+{"date": "2025-10-16", "license_number": "LIC-921882", "board_code": "MI-LPN", "name": "Gabriela Moreno", "status": "expired"}
+{"date": "2025-05-14", "license_number": "LIC-258577", "board_code": "CA-RN", "name": "Roberto Mendoza", "status": "pending"}
+{"date": "2025-03-13", "license_number": "LIC-584213", "board_code": "NC-LPN", "name": "Lucia Romero", "status": "active"}
+{"date": "2024-05-20", "license_number": "LIC-783426", "board_code": "TX-LPN", "name": "Roberto Mendoza", "status": "pending"}
+{"date": "2024-11-17", "license_number": "LIC-985768", "board_code": "CA-RN", "name": "Camila Ortiz", "status": "expired"}
+{"date": "2025-03-07", "license_number": "LIC-519439", "board_code": "PA-LPN", "name": "Lucia Romero", "status": "active"}
+{"date": "2024-12-08", "license_number": "LIC-756467", "board_code": "PA-LPN", "name": "Pedro Ramirez", "status": "renewed"}
+{"date": "2024-11-15", "license_number": "LIC-954455", "board_code": "CA-RN", "name": "Oscar Delgado", "status": "active"}
+{"date": "2024-05-25", "license_number": "LIC-583121", "board_code": "NC-RN", "name": "Andres Vargas", "status": "renewed"}
+{"date": "2026-01-22", "license_number": "LIC-944462", "board_code": "OH-RN", "name": "Lucia Romero", "status": "renewed"}
+{"date": "2025-03-02", "license_number": "LIC-915426", "board_code": "CA-RN", "name": "Miguel Sanchez", "status": "renewed"}
+{"date": "2024-06-05", "license_number": "LIC-905586", "board_code": "NC-LPN", "name": "Mariana Alvarez", "status": "active"}
+{"date": "2025-12-18", "license_number": "LIC-458043", "board_code": "TX-LPN", "name": "Miguel Sanchez", "status": "active"}
+{"date": "2026-02-13", "license_number": "LIC-468258", "board_code": "TX-LPN", "name": "Paula Gutierrez", "status": "active"}
+{"date": "2024-05-08", "license_number": "LIC-232629", "board_code": "IL-RN", "name": "David Morales", "status": "active"}
+{"date": "2025-05-09", "license_number": "LIC-938733", "board_code": "PA-RN", "name": "Gabriela Moreno", "status": "active"}
+{"date": "2024-12-04", "license_number": "LIC-469243", "board_code": "CA-RN", "name": "Valentina Cruz", "status": "expired"}
+{"date": "2025-08-30", "license_number": "LIC-378887", "board_code": "NY-RN", "name": "Daniel Jimenez", "status": "pending"}
+{"date": "2025-10-07", "license_number": "LIC-534345", "board_code": "FL-LPN", "name": "Andres Vargas", "status": "expired"}
+{"date": "2024-11-14", "license_number": "LIC-607772", "board_code": "IL-LPN", "name": "Laura Diaz", "status": "pending"}
+{"date": "2025-10-09", "license_number": "LIC-544330", "board_code": "FL-LPN", "name": "Carlos Lopez", "status": "active"}
+{"date": "2025-02-14", "license_number": "LIC-711390", "board_code": "NY-RN", "name": "Victor Soto", "status": "active"}
+{"date": "2025-04-23", "license_number": "LIC-178060", "board_code": "IL-LPN", "name": "Maria Garcia", "status": "active"}
+{"date": "2025-07-19", "license_number": "LIC-808399", "board_code": "OH-RN", "name": "Gabriela Moreno", "status": "expired"}
+{"date": "2024-01-26", "license_number": "LIC-297171", "board_code": "FL-RN", "name": "Miguel Sanchez", "status": "expired"}
+{"date": "2024-04-18", "license_number": "LIC-948782", "board_code": "GA-RN", "name": "Oscar Delgado", "status": "expired"}
+{"date": "2025-07-07", "license_number": "LIC-676622", "board_code": "NC-RN", "name": "Mariana Alvarez", "status": "pending"}
+{"date": "2025-06-17", "license_number": "LIC-533282", "board_code": "TX-LPN", "name": "Camila Ortiz", "status": "active"}
+{"date": "2024-11-20", "license_number": "LIC-835952", "board_code": "NC-LPN", "name": "Sofia Hernandez", "status": "renewed"}
+{"date": "2025-07-21", "license_number": "LIC-438677", "board_code": "NC-LPN", "name": "Valentina Cruz", "status": "renewed"}
+{"date": "2024-08-22", "license_number": "LIC-548535", "board_code": "GA-RN", "name": "Pedro Ramirez", "status": "suspended"}
+{"date": "2025-01-01", "license_number": "LIC-429845", "board_code": "FL-LPN", "name": "Ana Martinez", "status": "expired"}
+{"date": "2025-02-22", "license_number": "LIC-333865", "board_code": "NY-RN", "name": "Ana Martinez", "status": "suspended"}
+{"date": "2025-10-18", "license_number": "LIC-366220", "board_code": "IL-RN", "name": "Ricardo Medina", "status": "active"}
+{"date": "2025-04-12", "license_number": "LIC-917295", "board_code": "CA-LPN", "name": "Carolina Aguilar", "status": "expired"}
+{"date": "2024-01-06", "license_number": "LIC-596557", "board_code": "OH-RN", "name": "Oscar Delgado", "status": "active"}
+{"date": "2024-08-22", "license_number": "LIC-504596", "board_code": "CA-RN", "name": "Gabriela Moreno", "status": "active"}
+{"date": "2024-10-05", "license_number": "LIC-974274", "board_code": "MI-RN", "name": "Carlos Lopez", "status": "renewed"}
+{"date": "2024-07-19", "license_number": "LIC-670204", "board_code": "CA-LPN", "name": "Alejandro Ruiz", "status": "active"}
+{"date": "2024-06-11", "license_number": "LIC-342913", "board_code": "IL-LPN", "name": "Oscar Delgado", "status": "active"}
+{"date": "2025-08-05", "license_number": "LIC-817704", "board_code": "NC-RN", "name": "Carlos Lopez", "status": "active"}
+{"date": "2025-11-15", "license_number": "LIC-693411", "board_code": "NC-LPN", "name": "Elena Rodriguez", "status": "renewed"}
+{"date": "2025-12-13", "license_number": "LIC-965688", "board_code": "NY-LPN", "name": "Roberto Mendoza", "status": "active"}
+{"date": "2025-04-11", "license_number": "LIC-379998", "board_code": "CA-LPN", "name": "Ricardo Medina", "status": "active"}
+{"date": "2025-01-31", "license_number": "LIC-837063", "board_code": "TX-RN", "name": "Carlos Lopez", "status": "renewed"}
+{"date": "2024-01-24", "license_number": "LIC-625470", "board_code": "IL-RN", "name": "Oscar Delgado", "status": "expired"}
+{"date": "2025-05-08", "license_number": "LIC-148548", "board_code": "FL-LPN", "name": "Camila Ortiz", "status": "expired"}
+{"date": "2024-03-16", "license_number": "LIC-748486", "board_code": "OH-LPN", "name": "Sebastian Pena", "status": "expired"}
+{"date": "2025-05-05", "license_number": "LIC-629160", "board_code": "MI-LPN", "name": "Angela Rios", "status": "active"}
+{"date": "2025-07-08", "license_number": "LIC-617967", "board_code": "MI-RN", "name": "Sebastian Pena", "status": "active"}
+{"date": "2024-08-20", "license_number": "LIC-731198", "board_code": "FL-LPN", "name": "Maria Garcia", "status": "active"}
+{"date": "2025-12-31", "license_number": "LIC-634303", "board_code": "GA-LPN", "name": "Miguel Sanchez", "status": "active"}
+{"date": "2024-04-25", "license_number": "LIC-230280", "board_code": "PA-RN", "name": "Fernando Reyes", "status": "pending"}
+{"date": "2025-08-02", "license_number": "LIC-540815", "board_code": "TX-RN", "name": "Alejandro Ruiz", "status": "active"}
+{"date": "2025-10-09", "license_number": "LIC-751553", "board_code": "TX-LPN", "name": "Carlos Lopez", "status": "active"}
+{"date": "2024-12-20", "license_number": "LIC-767391", "board_code": "OH-LPN", "name": "Miguel Sanchez", "status": "renewed"}
+{"date": "2026-01-03", "license_number": "LIC-797885", "board_code": "GA-RN", "name": "David Morales", "status": "expired"}
+{"date": "2025-09-27", "license_number": "LIC-156945", "board_code": "OH-RN", "name": "Paula Gutierrez", "status": "suspended"}
+{"date": "2025-08-28", "license_number": "LIC-944655", "board_code": "TX-RN", "name": "Carlos Lopez", "status": "renewed"}
+{"date": "2025-12-19", "license_number": "LIC-359933", "board_code": "MI-LPN", "name": "Ana Martinez", "status": "suspended"}
+{"date": "2024-12-15", "license_number": "LIC-662691", "board_code": "IL-RN", "name": "Lucia Romero", "status": "expired"}
+{"date": "2024-06-09", "license_number": "LIC-260851", "board_code": "MI-RN", "name": "Lucia Romero", "status": "expired"}
+{"date": "2026-01-24", "license_number": "LIC-790023", "board_code": "GA-LPN", "name": "Diego Castillo", "status": "renewed"}
+{"date": "2024-06-19", "license_number": "LIC-255685", "board_code": "CA-LPN", "name": "Victor Soto", "status": "expired"}
+{"date": "2024-10-12", "license_number": "LIC-919263", "board_code": "OH-LPN", "name": "Diego Castillo", "status": "expired"}
+{"date": "2025-07-20", "license_number": "LIC-441261", "board_code": "NY-LPN", "name": "Ana Martinez", "status": "expired"}
+{"date": "2025-07-29", "license_number": "LIC-548470", "board_code": "PA-LPN", "name": "Mariana Alvarez", "status": "active"}
+{"date": "2025-10-25", "license_number": "LIC-636188", "board_code": "OH-RN", "name": "Carlos Lopez", "status": "active"}
+{"date": "2024-06-24", "license_number": "LIC-999119", "board_code": "GA-RN", "name": "Natalia Guerrero", "status": "active"}
+{"date": "2025-07-20", "license_number": "LIC-487014", "board_code": "IL-LPN", "name": "David Morales", "status": "expired"}
+{"date": "2025-12-18", "license_number": "LIC-183096", "board_code": "NY-LPN", "name": "Sofia Hernandez", "status": "active"}
+{"date": "2025-08-22", "license_number": "LIC-800751", "board_code": "PA-LPN", "name": "Daniel Jimenez", "status": "active"}
+{"date": "2026-02-08", "license_number": "LIC-281667", "board_code": "TX-LPN", "name": "Carlos Lopez", "status": "active"}
+{"date": "2025-04-22", "license_number": "LIC-644968", "board_code": "MI-LPN", "name": "Miguel Sanchez", "status": "active"}
+{"date": "2024-04-18", "license_number": "LIC-815814", "board_code": "PA-LPN", "name": "Gabriela Moreno", "status": "pending"}
+{"date": "2024-11-09", "license_number": "LIC-203689", "board_code": "MI-LPN", "name": "Carolina Aguilar", "status": "pending"}
+{"date": "2026-01-13", "license_number": "LIC-200008", "board_code": "TX-LPN", "name": "Victor Soto", "status": "active"}
+{"date": "2025-12-02", "license_number": "LIC-310517", "board_code": "CA-RN", "name": "Mariana Alvarez", "status": "active"}
+{"date": "2025-04-26", "license_number": "LIC-368087", "board_code": "FL-LPN", "name": "Maria Garcia", "status": "active"}
+{"date": "2025-03-15", "license_number": "LIC-877953", "board_code": "NY-LPN", "name": "Laura Diaz", "status": "expired"}
+{"date": "2025-12-29", "license_number": "LIC-305115", "board_code": "PA-LPN", "name": "Diego Castillo", "status": "renewed"}
+{"date": "2024-08-18", "license_number": "LIC-798046", "board_code": "MI-RN", "name": "Pedro Ramirez", "status": "expired"}
+{"date": "2025-12-08", "license_number": "LIC-838638", "board_code": "PA-LPN", "name": "Angela Rios", "status": "active"}
+{"date": "2025-03-08", "license_number": "LIC-819087", "board_code": "PA-RN", "name": "Jorge Torres", "status": "active"}
+{"date": "2024-11-11", "license_number": "LIC-839879", "board_code": "NY-RN", "name": "Elena Rodriguez", "status": "active"}
+{"date": "2025-08-20", "license_number": "LIC-500466", "board_code": "IL-LPN", "name": "Andres Vargas", "status": "active"}
+{"date": "2025-02-11", "license_number": "LIC-773037", "board_code": "TX-LPN", "name": "Oscar Delgado", "status": "pending"}
+{"date": "2024-09-30", "license_number": "LIC-558743", "board_code": "GA-RN", "name": "Ana Martinez", "status": "active"}
+{"date": "2024-05-17", "license_number": "LIC-547685", "board_code": "PA-LPN", "name": "Isabella Flores", "status": "pending"}
+{"date": "2024-07-21", "license_number": "LIC-203764", "board_code": "GA-LPN", "name": "Alejandro Ruiz", "status": "expired"}
+{"date": "2024-03-31", "license_number": "LIC-276630", "board_code": "GA-RN", "name": "Lucia Romero", "status": "pending"}
+{"date": "2026-01-16", "license_number": "LIC-929949", "board_code": "MI-LPN", "name": "Fernando Reyes", "status": "expired"}
+{"date": "2024-08-02", "license_number": "LIC-964622", "board_code": "IL-LPN", "name": "Ana Martinez", "status": "active"}
+{"date": "2024-09-01", "license_number": "LIC-253898", "board_code": "NY-LPN", "name": "Sebastian Pena", "status": "renewed"}
+{"date": "2025-03-10", "license_number": "LIC-831369", "board_code": "GA-RN", "name": "Carlos Lopez", "status": "renewed"}
+{"date": "2025-10-04", "license_number": "LIC-246474", "board_code": "NY-RN", "name": "Maria Garcia", "status": "active"}
+{"date": "2024-07-13", "license_number": "LIC-818648", "board_code": "MI-RN", "name": "Natalia Guerrero", "status": "expired"}
+{"date": "2025-10-31", "license_number": "LIC-743251", "board_code": "MI-LPN", "name": "Laura Diaz", "status": "active"}
+{"date": "2025-04-14", "license_number": "LIC-168014", "board_code": "IL-LPN", "name": "Lucia Romero", "status": "active"}
+{"date": "2025-04-05", "license_number": "LIC-956638", "board_code": "NC-RN", "name": "Maria Garcia", "status": "active"}
+{"date": "2025-07-28", "license_number": "LIC-614669", "board_code": "CA-LPN", "name": "Alejandro Ruiz", "status": "active"}
+{"date": "2025-12-06", "license_number": "LIC-326636", "board_code": "NY-LPN", "name": "Gabriela Moreno", "status": "pending"}
+{"date": "2024-09-08", "license_number": "LIC-601075", "board_code": "NY-RN", "name": "Diego Castillo", "status": "suspended"}
+{"date": "2024-12-16", "license_number": "LIC-450114", "board_code": "NY-LPN", "name": "Elena Rodriguez", "status": "pending"}
+{"date": "2024-01-30", "license_number": "LIC-110692", "board_code": "IL-RN", "name": "Pedro Ramirez", "status": "active"}
+{"date": "2025-07-13", "license_number": "LIC-443918", "board_code": "NC-LPN", "name": "Diego Castillo", "status": "expired"}
+{"date": "2025-01-23", "license_number": "LIC-524777", "board_code": "NY-LPN", "name": "Mariana Alvarez", "status": "active"}
+{"date": "2025-11-18", "license_number": "LIC-532682", "board_code": "OH-LPN", "name": "Gabriela Moreno", "status": "active"}
+{"date": "2024-11-27", "license_number": "LIC-575241", "board_code": "CA-LPN", "name": "Maria Garcia", "status": "renewed"}
+{"date": "2026-01-24", "license_number": "LIC-729400", "board_code": "NY-LPN", "name": "Ana Martinez", "status": "active"}
+{"date": "2025-10-19", "license_number": "LIC-322326", "board_code": "MI-RN", "name": "Gabriela Moreno", "status": "active"}
+{"date": "2024-08-14", "license_number": "LIC-275810", "board_code": "GA-RN", "name": "David Morales", "status": "pending"}
+{"date": "2025-03-05", "license_number": "LIC-474600", "board_code": "IL-LPN", "name": "Camila Ortiz", "status": "pending"}
+{"date": "2024-07-07", "license_number": "LIC-784023", "board_code": "MI-LPN", "name": "Elena Rodriguez", "status": "expired"}
+{"date": "2024-06-06", "license_number": "LIC-845190", "board_code": "IL-RN", "name": "Victor Soto", "status": "active"}
+{"date": "2024-11-03", "license_number": "LIC-288993", "board_code": "NC-LPN", "name": "Valentina Cruz", "status": "active"}
+{"date": "2024-11-06", "license_number": "LIC-807996", "board_code": "FL-RN", "name": "Alejandro Ruiz", "status": "expired"}
+{"date": "2025-07-27", "license_number": "LIC-242513", "board_code": "NY-LPN", "name": "Sofia Hernandez", "status": "active"}
+{"date": "2024-07-04", "license_number": "LIC-789170", "board_code": "PA-LPN", "name": "Carlos Lopez", "status": "active"}
+{"date": "2025-08-02", "license_number": "LIC-523220", "board_code": "PA-LPN", "name": "Andres Vargas", "status": "renewed"}
+{"date": "2024-01-28", "license_number": "LIC-835406", "board_code": "CA-LPN", "name": "Isabella Flores", "status": "active"}
+{"date": "2025-12-25", "license_number": "LIC-984254", "board_code": "GA-RN", "name": "Diego Castillo", "status": "active"}
+{"date": "2026-02-12", "license_number": "LIC-966809", "board_code": "IL-RN", "name": "Victor Soto", "status": "expired"}
+{"date": "2024-11-23", "license_number": "LIC-540855", "board_code": "OH-RN", "name": "Angela Rios", "status": "pending"}
+{"date": "2025-12-03", "license_number": "LIC-866842", "board_code": "MI-RN", "name": "Andres Vargas", "status": "active"}
+{"date": "2024-06-30", "license_number": "LIC-582205", "board_code": "GA-RN", "name": "David Morales", "status": "active"}
+{"date": "2024-05-24", "license_number": "LIC-131392", "board_code": "MI-LPN", "name": "Carlos Lopez", "status": "active"}
+{"date": "2025-11-02", "license_number": "LIC-578135", "board_code": "IL-LPN", "name": "Sebastian Pena", "status": "renewed"}
+{"date": "2024-10-13", "license_number": "LIC-607528", "board_code": "FL-RN", "name": "Fernando Reyes", "status": "renewed"}
+{"date": "2024-12-04", "license_number": "LIC-762184", "board_code": "TX-LPN", "name": "David Morales", "status": "expired"}
+{"date": "2025-12-10", "license_number": "LIC-126642", "board_code": "CA-RN", "name": "Lucia Romero", "status": "active"}
+{"date": "2025-11-20", "license_number": "LIC-685263", "board_code": "OH-RN", "name": "Ricardo Medina", "status": "active"}
+{"date": "2025-08-30", "license_number": "LIC-633253", "board_code": "MI-LPN", "name": "Angela Rios", "status": "pending"}
+{"date": "2024-09-27", "license_number": "LIC-988250", "board_code": "OH-RN", "name": "Pedro Ramirez", "status": "expired"}
+{"date": "2025-03-02", "license_number": "LIC-335541", "board_code": "CA-LPN", "name": "Pedro Ramirez", "status": "active"}
+{"date": "2025-12-27", "license_number": "LIC-345286", "board_code": "FL-RN", "name": "Angela Rios", "status": "active"}
+{"date": "2024-09-11", "license_number": "LIC-106645", "board_code": "NY-LPN", "name": "Isabella Flores", "status": "active"}
+{"date": "2024-02-03", "license_number": "LIC-746797", "board_code": "NC-RN", "name": "Fernando Reyes", "status": "pending"}
+{"date": "2025-03-28", "license_number": "LIC-317422", "board_code": "OH-LPN", "name": "Natalia Guerrero", "status": "renewed"}
+{"date": "2025-09-17", "license_number": "LIC-565994", "board_code": "IL-RN", "name": "Ricardo Medina", "status": "expired"}
+{"date": "2026-01-04", "license_number": "LIC-299611", "board_code": "NC-RN", "name": "Natalia Guerrero", "status": "suspended"}
+{"date": "2024-06-25", "license_number": "LIC-793166", "board_code": "GA-LPN", "name": "Daniel Jimenez", "status": "active"}
+{"date": "2025-03-09", "license_number": "LIC-945114", "board_code": "PA-LPN", "name": "Angela Rios", "status": "expired"}
+{"date": "2025-01-14", "license_number": "LIC-807536", "board_code": "FL-LPN", "name": "Roberto Mendoza", "status": "expired"}
+{"date": "2024-11-14", "license_number": "LIC-314036", "board_code": "MI-LPN", "name": "Ana Martinez", "status": "active"}
+{"date": "2025-07-06", "license_number": "LIC-240142", "board_code": "PA-LPN", "name": "Mariana Alvarez", "status": "pending"}
+{"date": "2025-09-19", "license_number": "LIC-951133", "board_code": "CA-LPN", "name": "Daniel Jimenez", "status": "active"}
+{"date": "2024-10-15", "license_number": "LIC-737524", "board_code": "IL-LPN", "name": "Ricardo Medina", "status": "suspended"}
+{"date": "2024-11-14", "license_number": "LIC-621769", "board_code": "PA-RN", "name": "Oscar Delgado", "status": "active"}
+{"date": "2025-11-11", "license_number": "LIC-922187", "board_code": "GA-LPN", "name": "Ana Martinez", "status": "renewed"}
+{"date": "2025-08-15", "license_number": "LIC-230983", "board_code": "PA-RN", "name": "Sebastian Pena", "status": "expired"}
+{"date": "2025-07-28", "license_number": "LIC-426471", "board_code": "FL-LPN", "name": "Jorge Torres", "status": "active"}
+{"date": "2025-01-22", "license_number": "LIC-193993", "board_code": "NC-RN", "name": "Valentina Cruz", "status": "active"}
+{"date": "2025-03-27", "license_number": "LIC-787318", "board_code": "OH-LPN", "name": "Oscar Delgado", "status": "renewed"}
+{"date": "2025-10-03", "license_number": "LIC-236208", "board_code": "TX-LPN", "name": "Sofia Hernandez", "status": "active"}
+{"date": "2026-01-19", "license_number": "LIC-536349", "board_code": "FL-LPN", "name": "Oscar Delgado", "status": "pending"}
+{"date": "2025-06-02", "license_number": "LIC-482401", "board_code": "NY-RN", "name": "Gabriela Moreno", "status": "active"}
+{"date": "2025-08-22", "license_number": "LIC-404529", "board_code": "TX-RN", "name": "Elena Rodriguez", "status": "renewed"}
+{"date": "2025-10-29", "license_number": "LIC-752793", "board_code": "NY-LPN", "name": "Diego Castillo", "status": "pending"}
+{"date": "2024-05-12", "license_number": "LIC-577986", "board_code": "NC-RN", "name": "Gabriela Moreno", "status": "active"}
+{"date": "2024-05-07", "license_number": "LIC-831880", "board_code": "NC-RN", "name": "Carolina Aguilar", "status": "active"}
+{"date": "2025-12-10", "license_number": "LIC-862813", "board_code": "NC-RN", "name": "Isabella Flores", "status": "active"}
+{"date": "2024-05-10", "license_number": "LIC-296631", "board_code": "NY-LPN", "name": "Pedro Ramirez", "status": "active"}
+{"date": "2024-09-10", "license_number": "LIC-868371", "board_code": "PA-LPN", "name": "Sofia Hernandez", "status": "pending"}
+{"date": "2025-05-18", "license_number": "LIC-215837", "board_code": "GA-LPN", "name": "Miguel Sanchez", "status": "active"}
+{"date": "2025-12-22", "license_number": "LIC-325979", "board_code": "PA-RN", "name": "Maria Garcia", "status": "expired"}
+{"date": "2025-06-05", "license_number": "LIC-342894", "board_code": "IL-RN", "name": "Ricardo Medina", "status": "pending"}
+{"date": "2025-09-25", "license_number": "LIC-725018", "board_code": "OH-LPN", "name": "Miguel Sanchez", "status": "active"}
+{"date": "2024-03-26", "license_number": "LIC-963331", "board_code": "CA-LPN", "name": "Sofia Hernandez", "status": "expired"}
+{"date": "2024-03-16", "license_number": "LIC-627451", "board_code": "CA-LPN", "name": "Ricardo Medina", "status": "active"}
+{"date": "2025-04-15", "license_number": "LIC-513764", "board_code": "OH-LPN", "name": "Oscar Delgado", "status": "active"}
+{"date": "2024-07-26", "license_number": "LIC-667166", "board_code": "TX-RN", "name": "Andres Vargas", "status": "expired"}
+{"date": "2025-10-16", "license_number": "LIC-818640", "board_code": "PA-LPN", "name": "Mariana Alvarez", "status": "active"}
+{"date": "2024-03-25", "license_number": "LIC-101422", "board_code": "NY-RN", "name": "Diego Castillo", "status": "expired"}
+{"date": "2025-03-23", "license_number": "LIC-619252", "board_code": "MI-LPN", "name": "Jorge Torres", "status": "active"}
+{"date": "2025-03-23", "license_number": "LIC-966373", "board_code": "PA-LPN", "name": "Pedro Ramirez", "status": "active"}
+{"date": "2024-01-23", "license_number": "LIC-656361", "board_code": "OH-RN", "name": "Jorge Torres", "status": "active"}
+{"date": "2024-01-11", "license_number": "LIC-333989", "board_code": "NC-RN", "name": "David Morales", "status": "expired"}
+{"date": "2025-10-29", "license_number": "LIC-402667", "board_code": "NC-LPN", "name": "Roberto Mendoza", "status": "active"}
+{"date": "2024-10-03", "license_number": "LIC-290593", "board_code": "MI-LPN", "name": "Alejandro Ruiz", "status": "active"}
+{"date": "2025-03-04", "license_number": "LIC-224053", "board_code": "NY-LPN", "name": "Valentina Cruz", "status": "active"}
+{"date": "2025-05-08", "license_number": "LIC-518456", "board_code": "OH-RN", "name": "Fernando Reyes", "status": "active"}
+{"date": "2025-12-16", "license_number": "LIC-792481", "board_code": "IL-LPN", "name": "Daniel Jimenez", "status": "pending"}
+{"date": "2024-10-29", "license_number": "LIC-589050", "board_code": "NY-LPN", "name": "Andres Vargas", "status": "active"}
+{"date": "2025-03-31", "license_number": "LIC-730843", "board_code": "NC-RN", "name": "Laura Diaz", "status": "active"}
+{"date": "2025-09-30", "license_number": "LIC-338031", "board_code": "NC-LPN", "name": "Laura Diaz", "status": "active"}
+{"date": "2024-08-10", "license_number": "LIC-855295", "board_code": "CA-RN", "name": "Jorge Torres", "status": "active"}
+{"date": "2025-05-28", "license_number": "LIC-294883", "board_code": "OH-LPN", "name": "Carlos Lopez", "status": "pending"}
+{"date": "2024-09-23", "license_number": "LIC-322399", "board_code": "IL-LPN", "name": "Mariana Alvarez", "status": "active"}
+{"date": "2026-01-31", "license_number": "LIC-931293", "board_code": "PA-LPN", "name": "Lucia Romero", "status": "active"}
+{"date": "2025-08-14", "license_number": "LIC-812309", "board_code": "OH-LPN", "name": "Camila Ortiz", "status": "active"}
+{"date": "2024-01-26", "license_number": "LIC-133339", "board_code": "FL-LPN", "name": "Andres Vargas", "status": "pending"}
+{"date": "2025-08-11", "license_number": "LIC-827899", "board_code": "PA-LPN", "name": "Oscar Delgado", "status": "active"}
+{"date": "2024-06-04", "license_number": "LIC-615348", "board_code": "PA-RN", "name": "Isabella Flores", "status": "active"}
+{"date": "2024-09-07", "license_number": "LIC-117263", "board_code": "MI-LPN", "name": "Victor Soto", "status": "active"}
+{"date": "2025-08-28", "license_number": "LIC-251686", "board_code": "NY-LPN", "name": "Diego Castillo", "status": "active"}
+{"date": "2024-06-26", "license_number": "LIC-203334", "board_code": "MI-LPN", "name": "Gabriela Moreno", "status": "renewed"}
+{"date": "2024-06-08", "license_number": "LIC-351408", "board_code": "TX-LPN", "name": "Angela Rios", "status": "expired"}
+{"date": "2025-01-21", "license_number": "LIC-379440", "board_code": "FL-RN", "name": "Miguel Sanchez", "status": "expired"}
+{"date": "2025-09-26", "license_number": "LIC-675029", "board_code": "MI-LPN", "name": "Isabella Flores", "status": "active"}
+{"date": "2024-03-10", "license_number": "LIC-310126", "board_code": "OH-LPN", "name": "Maria Garcia", "status": "active"}
+{"date": "2024-07-11", "license_number": "LIC-742829", "board_code": "NY-LPN", "name": "Carlos Lopez", "status": "pending"}
+{"date": "2025-06-13", "license_number": "LIC-860856", "board_code": "CA-LPN", "name": "Natalia Guerrero", "status": "pending"}
+{"date": "2024-05-08", "license_number": "LIC-307620", "board_code": "NC-LPN", "name": "Fernando Reyes", "status": "active"}
+{"date": "2024-07-26", "license_number": "LIC-466020", "board_code": "NC-LPN", "name": "Oscar Delgado", "status": "active"}
+{"date": "2024-04-21", "license_number": "LIC-972748", "board_code": "GA-LPN", "name": "Oscar Delgado", "status": "expired"}
+{"date": "2025-02-10", "license_number": "LIC-748047", "board_code": "GA-RN", "name": "Alejandro Ruiz", "status": "active"}
+{"date": "2025-07-12", "license_number": "LIC-173478", "board_code": "OH-LPN", "name": "Maria Garcia", "status": "renewed"}
+{"date": "2024-04-03", "license_number": "LIC-187361", "board_code": "FL-RN", "name": "Jorge Torres", "status": "active"}
+{"date": "2025-10-31", "license_number": "LIC-333445", "board_code": "FL-RN", "name": "Ana Martinez", "status": "expired"}
+{"date": "2025-02-27", "license_number": "LIC-758840", "board_code": "PA-RN", "name": "Elena Rodriguez", "status": "active"}
+{"date": "2024-06-05", "license_number": "LIC-199013", "board_code": "GA-RN", "name": "Mariana Alvarez", "status": "active"}
+{"date": "2025-09-26", "license_number": "LIC-705351", "board_code": "IL-LPN", "name": "Sebastian Pena", "status": "expired"}
+{"date": "2025-08-17", "license_number": "LIC-955177", "board_code": "PA-LPN", "name": "Miguel Sanchez", "status": "pending"}
+{"date": "2025-03-21", "license_number": "LIC-517606", "board_code": "FL-RN", "name": "Isabella Flores", "status": "active"}
+{"date": "2024-03-01", "license_number": "LIC-674335", "board_code": "NC-LPN", "name": "Pedro Ramirez", "status": "expired"}
+{"date": "2025-03-07", "license_number": "LIC-134156", "board_code": "FL-RN", "name": "Diego Castillo", "status": "pending"}
+{"date": "2024-09-06", "license_number": "LIC-702512", "board_code": "FL-LPN", "name": "Carolina Aguilar", "status": "expired"}
+{"date": "2024-03-30", "license_number": "LIC-196836", "board_code": "IL-RN", "name": "Lucia Romero", "status": "active"}
+{"date": "2025-08-09", "license_number": "LIC-335994", "board_code": "TX-RN", "name": "Carlos Lopez", "status": "expired"}
+{"date": "2025-12-09", "license_number": "LIC-614383", "board_code": "NC-RN", "name": "Carolina Aguilar", "status": "active"}
+{"date": "2024-07-31", "license_number": "LIC-981521", "board_code": "OH-RN", "name": "Diego Castillo", "status": "active"}
+{"date": "2025-08-15", "license_number": "LIC-830373", "board_code": "IL-LPN", "name": "Angela Rios", "status": "active"}
+{"date": "2024-04-21", "license_number": "LIC-155375", "board_code": "NC-RN", "name": "Jorge Torres", "status": "renewed"}
+{"date": "2025-12-12", "license_number": "LIC-339231", "board_code": "NY-RN", "name": "Jorge Torres", "status": "active"}
+{"date": "2025-10-24", "license_number": "LIC-719386", "board_code": "NY-LPN", "name": "Andres Vargas", "status": "active"}
+{"date": "2025-02-28", "license_number": "LIC-236589", "board_code": "PA-RN", "name": "Paula Gutierrez", "status": "active"}
+{"date": "2025-03-13", "license_number": "LIC-897622", "board_code": "MI-LPN", "name": "Daniel Jimenez", "status": "active"}
+{"date": "2024-08-08", "license_number": "LIC-505495", "board_code": "PA-RN", "name": "Fernando Reyes", "status": "pending"}
+{"date": "2024-11-16", "license_number": "LIC-622301", "board_code": "OH-RN", "name": "Maria Garcia", "status": "pending"}
+{"date": "2024-05-28", "license_number": "LIC-485614", "board_code": "OH-RN", "name": "Ana Martinez", "status": "active"}
+{"date": "2025-11-08", "license_number": "LIC-342858", "board_code": "IL-RN", "name": "Mariana Alvarez", "status": "pending"}
+{"date": "2025-03-17", "license_number": "LIC-274122", "board_code": "CA-LPN", "name": "Gabriela Moreno", "status": "active"}
+{"date": "2025-07-05", "license_number": "LIC-713644", "board_code": "TX-RN", "name": "Ricardo Medina", "status": "active"}
+{"date": "2024-12-14", "license_number": "LIC-248019", "board_code": "GA-RN", "name": "Carolina Aguilar", "status": "expired"}
+{"date": "2025-07-20", "license_number": "LIC-915514", "board_code": "IL-LPN", "name": "Fernando Reyes", "status": "active"}
+{"date": "2025-07-05", "license_number": "LIC-134558", "board_code": "TX-RN", "name": "Lucia Romero", "status": "pending"}
+{"date": "2025-12-02", "license_number": "LIC-263376", "board_code": "NY-RN", "name": "Maria Garcia", "status": "renewed"}
+{"date": "2025-03-14", "license_number": "LIC-390861", "board_code": "NC-RN", "name": "Jorge Torres", "status": "pending"}
+{"date": "2026-02-01", "license_number": "LIC-120623", "board_code": "FL-RN", "name": "Victor Soto", "status": "pending"}
+{"date": "2025-01-24", "license_number": "LIC-814888", "board_code": "CA-LPN", "name": "Gabriela Moreno", "status": "active"}
+{"date": "2025-09-12", "license_number": "LIC-930154", "board_code": "CA-RN", "name": "Carolina Aguilar", "status": "renewed"}
+{"date": "2024-05-06", "license_number": "LIC-348314", "board_code": "FL-LPN", "name": "Elena Rodriguez", "status": "pending"}
+{"date": "2025-08-09", "license_number": "LIC-557738", "board_code": "IL-LPN", "name": "Pedro Ramirez", "status": "active"}
+{"date": "2025-09-11", "license_number": "LIC-895171", "board_code": "CA-RN", "name": "Carolina Aguilar", "status": "active"}
+{"date": "2024-08-18", "license_number": "LIC-198039", "board_code": "TX-RN", "name": "Pedro Ramirez", "status": "active"}
+{"date": "2025-08-04", "license_number": "LIC-149032", "board_code": "NC-RN", "name": "Laura Diaz", "status": "active"}
+{"date": "2025-01-27", "license_number": "LIC-431279", "board_code": "PA-RN", "name": "Roberto Mendoza", "status": "pending"}
+{"date": "2025-06-08", "license_number": "LIC-998961", "board_code": "TX-RN", "name": "Elena Rodriguez", "status": "active"}
+{"date": "2025-07-03", "license_number": "LIC-830055", "board_code": "MI-LPN", "name": "Sofia Hernandez", "status": "expired"}
+{"date": "2024-06-10", "license_number": "LIC-399963", "board_code": "NC-RN", "name": "Andres Vargas", "status": "pending"}
+{"date": "2025-12-29", "license_number": "LIC-681222", "board_code": "TX-RN", "name": "Daniel Jimenez", "status": "pending"}
+{"date": "2026-01-10", "license_number": "LIC-608175", "board_code": "TX-LPN", "name": "David Morales", "status": "active"}
+{"date": "2025-11-30", "license_number": "LIC-307209", "board_code": "NC-LPN", "name": "Paula Gutierrez", "status": "active"}
+{"date": "2025-02-23", "license_number": "LIC-362459", "board_code": "MI-LPN", "name": "Isabella Flores", "status": "pending"}
+{"date": "2025-03-01", "license_number": "LIC-649180", "board_code": "NY-RN", "name": "Valentina Cruz", "status": "pending"}
+{"date": "2025-09-02", "license_number": "LIC-775803", "board_code": "TX-LPN", "name": "Camila Ortiz", "status": "pending"}
+{"date": "2024-03-12", "license_number": "LIC-326918", "board_code": "MI-LPN", "name": "Andres Vargas", "status": "active"}
+{"date": "2025-07-08", "license_number": "LIC-466478", "board_code": "IL-LPN", "name": "Ana Martinez", "status": "renewed"}
+{"date": "2024-07-04", "license_number": "LIC-618751", "board_code": "OH-LPN", "name": "Diego Castillo", "status": "pending"}
+{"date": "2024-07-23", "license_number": "LIC-462851", "board_code": "TX-LPN", "name": "Victor Soto", "status": "active"}
+{"date": "2024-04-01", "license_number": "LIC-543745", "board_code": "FL-RN", "name": "Sofia Hernandez", "status": "pending"}
+{"date": "2024-08-01", "license_number": "LIC-964493", "board_code": "FL-RN", "name": "Natalia Guerrero", "status": "active"}
+{"date": "2024-02-04", "license_number": "LIC-775900", "board_code": "TX-RN", "name": "Pedro Ramirez", "status": "renewed"}
+{"date": "2024-03-06", "license_number": "LIC-940944", "board_code": "IL-LPN", "name": "Ricardo Medina", "status": "active"}
+{"date": "2025-02-08", "license_number": "LIC-451699", "board_code": "PA-RN", "name": "Mariana Alvarez", "status": "expired"}
+{"date": "2026-01-14", "license_number": "LIC-272225", "board_code": "NY-RN", "name": "Angela Rios", "status": "active"}
+{"date": "2024-09-13", "license_number": "LIC-724222", "board_code": "NC-LPN", "name": "Diego Castillo", "status": "suspended"}
+{"date": "2024-05-27", "license_number": "LIC-269190", "board_code": "GA-LPN", "name": "Oscar Delgado", "status": "active"}
+{"date": "2025-11-24", "license_number": "LIC-850546", "board_code": "MI-LPN", "name": "Elena Rodriguez", "status": "renewed"}
+{"date": "2024-07-30", "license_number": "LIC-431057", "board_code": "NC-LPN", "name": "Elena Rodriguez", "status": "expired"}
+{"date": "2024-08-01", "license_number": "LIC-681599", "board_code": "PA-RN", "name": "Paula Gutierrez", "status": "active"}
+{"date": "2025-09-15", "license_number": "LIC-735274", "board_code": "OH-LPN", "name": "Laura Diaz", "status": "active"}
