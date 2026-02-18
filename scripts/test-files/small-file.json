@@ -1,0 +1,6 @@
+[
+  {"date": "2026-01-15", "license_number": "LIC-001234", "board_code": "FL-RN", "name": "Maria Garcia", "status": "active"},
+  {"date": "2026-01-16", "license_number": "LIC-005678", "board_code": "FL-LPN", "name": "Carlos Lopez", "status": "active"},
+  {"date": "2026-02-01", "license_number": "LIC-009012", "board_code": "TX-RN", "name": "Ana Martinez", "status": "expired"},
+  {"date": "2026-02-10", "license_number": "LIC-003456", "board_code": "FL-RN", "name": "Pedro Ramirez", "status": "active"}
+]
