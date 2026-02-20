@@ -529,122 +529,72 @@ function generateUserData(
   regionName: string,
   bucketName: string
 ): string {
-  // Script de sincronización multi-folder (se guarda como archivo separado en la instancia)
+  // Sync script - recursive scan of entire BoardFiles/ tree
   // NOTE: This content is embedded inside a PowerShell @'...'@ here-string,
   // so $ signs are literal and NOT expanded during the user data execution.
-  // They only get interpreted when the sync script is actually run later.
   const syncScriptContent = `
-# =============================================================================
-# Sync-BoardFilesToS3.ps1 - Multi-Folder Board Files Sync Script
-# =============================================================================
-
 $ErrorActionPreference = "Continue"
-$BaseLandingPath = "C:\\SFTP\\BoardFiles\\Landing"
-$BaseArchivePath = "C:\\SFTP\\BoardFiles\\Archive"
-$LogPath = "C:\\SFTP\\Logs\\sync.log"
+$BasePath = "C:\\CEB_FTP_Data\\SFTP"
+$LogPath = "C:\\CEB_FTP_Data\\Logs\\sync.log"
 $BucketName = "${bucketName}"
 $AwsRegion = "${regionName}"
-$DatasetFolders = @("board-files", "nursing-files", "pharmacy")
+$SyncAfterDate = [DateTime]"${new Date().toISOString().split("T")[0]}"
 
 function Write-SyncLog {
     param([string]$Message, [string]$Level = "INFO")
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $logMessage = "[$timestamp] [$Level] $Message"
-    Add-Content -Path $LogPath -Value $logMessage -Force
+    Add-Content -Path $LogPath -Value "[$timestamp] [$Level] $Message" -Force
     $source = "BoardFileSync"
     if (-not [System.Diagnostics.EventLog]::SourceExists($source)) {
         New-EventLog -LogName Application -Source $source -ErrorAction SilentlyContinue
     }
-    $eventType = switch ($Level) {
-        "ERROR" { "Error" }
-        "WARN"  { "Warning" }
-        default { "Information" }
-    }
+    $eventType = switch ($Level) { "ERROR" { "Error" } "WARN" { "Warning" } default { "Information" } }
     Write-EventLog -LogName Application -Source $source -EventId 1000 -EntryType $eventType -Message $Message -ErrorAction SilentlyContinue
 }
 
 function Test-FileNotLocked {
     param([string]$FilePath)
-    try {
-        $fileStream = [System.IO.File]::Open($FilePath, 'Open', 'Read', 'None')
-        $fileStream.Close()
-        $fileStream.Dispose()
-        return $true
-    } catch {
-        return $false
-    }
+    try { $s = [System.IO.File]::Open($FilePath, 'Open', 'Read', 'None'); $s.Close(); $s.Dispose(); return $true } catch { return $false }
 }
 
 function Get-FileStableSize {
     param([string]$FilePath, [int]$WaitSeconds = 5)
-    $size1 = (Get-Item $FilePath).Length
-    Start-Sleep -Seconds $WaitSeconds
-    $size2 = (Get-Item $FilePath).Length
-    return $size1 -eq $size2
+    $s1 = (Get-Item $FilePath).Length; Start-Sleep -Seconds $WaitSeconds; $s2 = (Get-Item $FilePath).Length; return $s1 -eq $s2
 }
 
-Write-SyncLog "Iniciando sincronizacion multi-folder..."
-$totalSuccess = 0
-$totalErrors = 0
+Write-SyncLog "Iniciando sincronizacion recursiva..."
+$totalSuccess = 0; $totalErrors = 0
 
-foreach ($datasetFolder in $DatasetFolders) {
-    $landingPath = Join-Path $BaseLandingPath $datasetFolder
-    $archivePath = Join-Path $BaseArchivePath $datasetFolder
+$allFiles = Get-ChildItem -Path $BasePath -File -Recurse -ErrorAction SilentlyContinue |
+    Where-Object { $_.CreationTime -ge $SyncAfterDate -and $_.DirectoryName -notmatch '\\\\processed(\\\\|$)' }
 
-    if (-not (Test-Path $landingPath)) {
-        New-Item -ItemType Directory -Path $landingPath -Force | Out-Null
-    }
-    if (-not (Test-Path $archivePath)) {
-        New-Item -ItemType Directory -Path $archivePath -Force | Out-Null
-    }
-
-    $files = Get-ChildItem -Path $landingPath -File -ErrorAction SilentlyContinue
-    if ($files.Count -eq 0) { continue }
-
-    Write-SyncLog "[$datasetFolder] Encontrados $($files.Count) archivos"
-
-    foreach ($file in $files) {
-        $filePath = $file.FullName
-        $fileName = $file.Name
-
-        if (-not (Test-FileNotLocked -FilePath $filePath)) {
-            Write-SyncLog "[$datasetFolder] Archivo bloqueado: $fileName" -Level "WARN"
-            continue
-        }
-
-        if (-not (Get-FileStableSize -FilePath $filePath -WaitSeconds 3)) {
-            Write-SyncLog "[$datasetFolder] En transferencia: $fileName" -Level "WARN"
-            continue
-        }
-
+if ($allFiles.Count -eq 0) { Write-SyncLog "No hay archivos nuevos" }
+else {
+    Write-SyncLog "Encontrados $($allFiles.Count) archivos nuevos (desde $SyncAfterDate)"
+    foreach ($file in $allFiles) {
+        $filePath = $file.FullName; $fileName = $file.Name; $fileDir = $file.DirectoryName
+        $relativePath = ($fileDir.Substring($BasePath.Length).TrimStart('\\')) -replace '\\\\', '/'
+        $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+        $s3Key = "$relativePath/" + "$timestamp" + "_" + "$fileName"
+        if (-not (Test-FileNotLocked -FilePath $filePath)) { Write-SyncLog "[$relativePath] Bloqueado: $fileName" -Level "WARN"; continue }
+        if (-not (Get-FileStableSize -FilePath $filePath -WaitSeconds 3)) { Write-SyncLog "[$relativePath] En transferencia: $fileName" -Level "WARN"; continue }
         try {
-            $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-            $s3Key = "$datasetFolder/" + "$timestamp" + "_" + "$fileName"
-            Write-SyncLog "[$datasetFolder] Subiendo a s3://$BucketName/$s3Key"
+            Write-SyncLog "[$relativePath] Subiendo s3://$BucketName/$s3Key"
             Write-S3Object -BucketName $BucketName -File $filePath -Key $s3Key -Region $AwsRegion
-            $archiveFileName = (Get-Date -Format 'yyyyMMdd_HHmmss') + "_" + $fileName
-            $archiveDest = Join-Path $archivePath $archiveFileName
-            Move-Item -Path $filePath -Destination $archiveDest -Force
-            Write-SyncLog "[$datasetFolder] OK: $fileName -> $s3Key"
-            $totalSuccess++
-        } catch {
-            Write-SyncLog "[$datasetFolder] Error: $fileName - $($_.Exception.Message)" -Level "ERROR"
-            $totalErrors++
-        }
+            $processedPath = Join-Path $fileDir "processed"
+            if (-not (Test-Path $processedPath)) { New-Item -ItemType Directory -Path $processedPath -Force | Out-Null }
+            Move-Item -Path $filePath -Destination (Join-Path $processedPath $fileName) -Force
+            Write-SyncLog "[$relativePath] OK: $fileName"; $totalSuccess++
+        } catch { Write-SyncLog "[$relativePath] ERROR: $fileName - $($_.Exception.Message)" -Level "ERROR"; $totalErrors++ }
     }
 }
 
 Write-SyncLog "Completado: Exitosos=$totalSuccess, Errores=$totalErrors"
 
 $cutoffDate = (Get-Date).AddDays(-30)
-foreach ($datasetFolder in $DatasetFolders) {
-    $archivePath = Join-Path $BaseArchivePath $datasetFolder
-    if (Test-Path $archivePath) {
-        Get-ChildItem -Path $archivePath -File | Where-Object { $_.LastWriteTime -lt $cutoffDate } | ForEach-Object {
-            Remove-Item $_.FullName -Force
-        }
-    }
-}
+Get-ChildItem -Path $BasePath -File -Recurse -ErrorAction SilentlyContinue |
+    Where-Object { $_.DirectoryName -match '\\\\processed(\\\\|$)' -and $_.LastWriteTime -lt $cutoffDate } |
+    ForEach-Object { Remove-Item $_.FullName -Force }
 `.trim();
 
   return `<powershell>
@@ -653,7 +603,7 @@ foreach ($datasetFolder in $DatasetFolders) {
 # =============================================================================
 
 $ErrorActionPreference = "Stop"
-$LogFile = "C:\\SFTP\\Logs\\setup.log"
+$LogFile = "C:\\CEB_FTP_Data\\Logs\\setup.log"
 
 function Write-Log {
     param([string]$Message)
@@ -663,15 +613,27 @@ function Write-Log {
     Write-Host $logMessage
 }
 
-# Crear estructura de carpetas (multi-folder)
-New-Item -ItemType Directory -Path "C:\\SFTP\\Scripts" -Force
-New-Item -ItemType Directory -Path "C:\\SFTP\\Logs" -Force
-foreach ($folder in @("board-files", "nursing-files", "pharmacy")) {
-    New-Item -ItemType Directory -Path "C:\\SFTP\\BoardFiles\\Landing\\$folder" -Force
-    New-Item -ItemType Directory -Path "C:\\SFTP\\BoardFiles\\Archive\\$folder" -Force
+# Crear estructura de carpetas (replica exacta de legacy-sftp-02)
+New-Item -ItemType Directory -Path "C:\\CEB_FTP_Data\\Scripts" -Force
+New-Item -ItemType Directory -Path "C:\\CEB_FTP_Data\\Logs" -Force
+New-Item -ItemType Directory -Path "C:\\CEB_FTP_Data\\SFTP\\Providers\\processed" -Force
+
+# Board_* subfolders (replica de legacy-sftp-02)
+$boardFolders = @(
+    "Board_NDSBOTP", "Board_NDSWE", "Board_NHMS", "Board_NHOPLC",
+    "Board_NMM", "Board_NMMMedical", "Board_NMN", "Board_NMRealEstate",
+    "Board_NVBOM", "Board_NVPT", "Board_OBMLS", "Board_OKBCE",
+    "Board_OKDENT", "Board_OKREC", "Board_OSBOE", "Board_SCAG",
+    "Board_SCRQSA", "Board_SDBMT", "Board_TFSC", "Board_TMB",
+    "Board_TNDCI", "Board_TSBPE", "Board_TXBHEC", "Board_TXOPT",
+    "Board_VADental", "Board_VAPT"
+)
+
+foreach ($board in $boardFolders) {
+    New-Item -ItemType Directory -Path "C:\\CEB_FTP_Data\\SFTP\\Boards\\$board\\processed" -Force | Out-Null
 }
 
-Write-Log "Estructura de carpetas creada (board-files, nursing-files, pharmacy)"
+Write-Log "Estructura de carpetas creada: $($boardFolders.Count) Board_* folders + Providers"
 
 # -----------------------------------------------------------------------------
 # Instalar y configurar OpenSSH Server
@@ -716,7 +678,7 @@ $sshdConfig = @"
 
 # SFTP Configuration for BoardUser
 Match User BoardUser
-    ChrootDirectory C:\\SFTP\\BoardFiles
+    ChrootDirectory C:\\CEB_FTP_Data\\SFTP
     ForceCommand internal-sftp
     AllowTcpForwarding no
     X11Forwarding no
@@ -725,7 +687,7 @@ Match User BoardUser
 Add-Content -Path "C:\\ProgramData\\ssh\\sshd_config" -Value $sshdConfig
 
 # Configurar permisos de carpeta
-$acl = Get-Acl "C:\\SFTP\\BoardFiles"
+$acl = Get-Acl "C:\\CEB_FTP_Data\\SFTP"
 $acl.SetAccessRuleProtection($true, $false)
 
 $adminRule = New-Object System.Security.AccessControl.FileSystemAccessRule("BUILTIN\\Administrators", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
@@ -737,7 +699,7 @@ $acl.AddAccessRule($systemRule)
 $userRule = New-Object System.Security.AccessControl.FileSystemAccessRule("BoardUser", "Modify", "ContainerInherit,ObjectInherit", "None", "Allow")
 $acl.AddAccessRule($userRule)
 
-Set-Acl -Path "C:\\SFTP\\BoardFiles" $acl
+Set-Acl -Path "C:\\CEB_FTP_Data\\SFTP" $acl
 Restart-Service sshd
 
 Write-Log "SFTP chroot configurado"
@@ -751,7 +713,7 @@ $syncScriptContent = @'
 ${syncScriptContent}
 '@
 
-Set-Content -Path "C:\\SFTP\\Scripts\\Sync-BoardFilesToS3.ps1" -Value $syncScriptContent -Force
+Set-Content -Path "C:\\CEB_FTP_Data\\Scripts\\Sync-BoardFilesToS3.ps1" -Value $syncScriptContent -Force
 
 Write-Log "Script de sincronizacion creado"
 
@@ -760,7 +722,7 @@ Write-Log "Script de sincronizacion creado"
 # -----------------------------------------------------------------------------
 Write-Log "Creando tarea programada..."
 
-$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -ExecutionPolicy Bypass -File C:\\SFTP\\Scripts\\Sync-BoardFilesToS3.ps1"
+$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -ExecutionPolicy Bypass -File C:\\CEB_FTP_Data\\Scripts\\Sync-BoardFilesToS3.ps1"
 $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 5) -RepetitionDuration (New-TimeSpan -Days 9999)
 $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -RunOnlyIfNetworkAvailable
@@ -777,11 +739,11 @@ if (-not [System.Diagnostics.EventLog]::SourceExists("BoardFileSync")) {
 Write-Log "============================================="
 Write-Log "Setup completado exitosamente!"
 Write-Log "- Usuario SFTP: BoardUser"
-Write-Log "- Carpeta Landing: C:\\SFTP\\BoardFiles\\Landing\\{folder}"
-Write-Log "- Carpeta Archive: C:\\SFTP\\BoardFiles\\Archive\\{folder}"
-Write-Log "- Script de sync: C:\\SFTP\\Scripts\\Sync-BoardFilesToS3.ps1"
+Write-Log "- Boards: C:\\CEB_FTP_Data\\SFTP\\Boards\\Board_*"
+Write-Log "- Providers: C:\\CEB_FTP_Data\\SFTP\\Providers"
+Write-Log "- Script de sync: C:\\CEB_FTP_Data\\Scripts\\Sync-BoardFilesToS3.ps1"
 Write-Log "- Tarea programada: BoardFiles-S3-Sync (cada 5 min)"
-Write-Log "- Bucket S3: data-do-ent-file-ingestion-test-landing"
+Write-Log "- Bucket S3: ${bucketName}"
 Write-Log "============================================="
 
 </powershell>

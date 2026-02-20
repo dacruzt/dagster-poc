@@ -7,67 +7,40 @@ REGION="${AWS_DEFAULT_REGION:-us-east-1}"
 
 echo "Seeding dataset registry in table: $TABLE_NAME"
 
-# --- board-files ---
+# --- Boards (covers all Board_* subfolders) ---
 aws dynamodb put-item \
   --table-name "$TABLE_NAME" \
   --region "$REGION" \
   --item '{
-    "pk": {"S": "DATASET#board-files"},
+    "pk": {"S": "DATASET#Boards"},
     "sk": {"S": "CONFIG"},
-    "dataset_id": {"S": "board-files"},
+    "dataset_id": {"S": "Boards"},
     "schema_version": {"S": "1.0"},
     "compute_target": {"S": "LAMBDA"},
-    "allowed_extensions": {"L": [{"S": ".csv"}, {"S": ".json"}, {"S": ".xls"}]},
+    "allowed_extensions": {"L": [{"S": ".csv"}, {"S": ".json"}, {"S": ".xls"}, {"S": ".xlsx"}]},
     "required_columns": {"L": [
       {"M": {"name": {"S": "date"}, "type": {"S": "date"}}},
       {"M": {"name": {"S": "license_number"}, "type": {"S": "string"}}},
       {"M": {"name": {"S": "board_code"}, "type": {"S": "string"}}}
     ]},
-    "description": {"S": "Board license files - csv, json, xls only"}
+    "description": {"S": "Board license files from all Board_* subfolders"}
   }'
-echo "Seeded board-files config."
+echo "Seeded Boards config."
 
-# --- nursing-files ---
+# --- Providers ---
 aws dynamodb put-item \
   --table-name "$TABLE_NAME" \
   --region "$REGION" \
   --item '{
-    "pk": {"S": "DATASET#nursing-files"},
+    "pk": {"S": "DATASET#Providers"},
     "sk": {"S": "CONFIG"},
-    "dataset_id": {"S": "nursing-files"},
+    "dataset_id": {"S": "Providers"},
     "schema_version": {"S": "1.0"},
     "compute_target": {"S": "LAMBDA"},
-    "allowed_extensions": {"L": [{"S": ".csv"}, {"S": ".json"}, {"S": ".xlsx"}]},
-    "required_columns": {"L": [
-      {"M": {"name": {"S": "date"}, "type": {"S": "date"}}},
-      {"M": {"name": {"S": "license_number"}, "type": {"S": "string"}}},
-      {"M": {"name": {"S": "board_code"}, "type": {"S": "string"}}}
-    ]},
-    "description": {"S": "Nursing license files - csv, json, xlsx only"}
+    "allowed_extensions": {"L": [{"S": ".csv"}, {"S": ".json"}, {"S": ".xls"}, {"S": ".xlsx"}]},
+    "required_columns": {"L": []},
+    "description": {"S": "Provider data files"}
   }'
-echo "Seeded nursing-files config."
+echo "Seeded Providers config."
 
-# --- pharmacy ---
-aws dynamodb put-item \
-  --table-name "$TABLE_NAME" \
-  --region "$REGION" \
-  --item '{
-    "pk": {"S": "DATASET#pharmacy"},
-    "sk": {"S": "CONFIG"},
-    "dataset_id": {"S": "pharmacy"},
-    "schema_version": {"S": "1.0"},
-    "compute_target": {"S": "LAMBDA"},
-    "allowed_extensions": {"L": [{"S": ".csv"}, {"S": ".json"}]},
-    "required_columns": {"L": [
-      {"M": {"name": {"S": "date"}, "type": {"S": "date"}}},
-      {"M": {"name": {"S": "pharmacy_license"}, "type": {"S": "string"}}},
-      {"M": {"name": {"S": "state"}, "type": {"S": "string"}}},
-      {"M": {"name": {"S": "pharmacist_name"}, "type": {"S": "string"}}},
-      {"M": {"name": {"S": "dea_number"}, "type": {"S": "string"}}},
-      {"M": {"name": {"S": "status"}, "type": {"S": "string"}}}
-    ]},
-    "description": {"S": "Pharmacy license and DEA files - csv, json only"}
-  }'
-echo "Seeded pharmacy config."
-
-echo "Done. All 3 dataset configs seeded."
+echo "Done. All 2 dataset configs seeded (Boards, Providers)."

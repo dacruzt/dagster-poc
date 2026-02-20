@@ -37,17 +37,17 @@ echo " Region:      $AWS_REGION"
 echo "============================================="
 
 # El script PowerShell que se ejecutará en la máquina remota:
-# 1. Crea la estructura de carpetas (multi-folder)
+# 1. Crea la estructura de carpetas (Boards + Providers)
 # 2. Copia el script de sync
 # 3. Crea la tarea programada (si no existe)
 read -r -d '' PS_COMMAND << 'POWERSHELL_EOF' || true
 $ErrorActionPreference = "Stop"
 
-# --- Crear estructura de carpetas (multi-folder) ---
-$datasetFolders = @("board-files", "nursing-files", "pharmacy")
+# --- Crear estructura de carpetas (replica exacta de legacy SFTP) ---
 $baseFolders = @(
-    "C:\SFTP\Scripts",
-    "C:\SFTP\Logs"
+    "C:\CEB_FTP_Data\Scripts",
+    "C:\CEB_FTP_Data\Logs",
+    "C:\CEB_FTP_Data\SFTP\Providers\processed"
 )
 
 foreach ($folder in $baseFolders) {
@@ -59,18 +59,24 @@ foreach ($folder in $baseFolders) {
     }
 }
 
-foreach ($dataset in $datasetFolders) {
-    $landing = "C:\SFTP\BoardFiles\Landing\$dataset"
-    $archive = "C:\SFTP\BoardFiles\Archive\$dataset"
-    foreach ($path in @($landing, $archive)) {
-        if (-not (Test-Path $path)) {
-            New-Item -ItemType Directory -Path $path -Force | Out-Null
-            Write-Output "Carpeta creada: $path"
-        } else {
-            Write-Output "Carpeta ya existe: $path"
-        }
+# Board_* subfolders (replica de legacy-sftp-02)
+$boardFolders = @(
+    "Board_NDSBOTP", "Board_NDSWE", "Board_NHMS", "Board_NHOPLC",
+    "Board_NMM", "Board_NMMMedical", "Board_NMN", "Board_NMRealEstate",
+    "Board_NVBOM", "Board_NVPT", "Board_OBMLS", "Board_OKBCE",
+    "Board_OKDENT", "Board_OKREC", "Board_OSBOE", "Board_SCAG",
+    "Board_SCRQSA", "Board_SDBMT", "Board_TFSC", "Board_TMB",
+    "Board_TNDCI", "Board_TSBPE", "Board_TXBHEC", "Board_TXOPT",
+    "Board_VADental", "Board_VAPT"
+)
+
+foreach ($board in $boardFolders) {
+    $path = "C:\CEB_FTP_Data\SFTP\Boards\$board\processed"
+    if (-not (Test-Path $path)) {
+        New-Item -ItemType Directory -Path $path -Force | Out-Null
     }
 }
+Write-Output "Creados $($boardFolders.Count) Board_* subfolders + Providers"
 
 # --- Instalar AWS PowerShell si no esta disponible ---
 if (-not (Get-Module -ListAvailable -Name AWSPowerShell)) {
@@ -82,19 +88,26 @@ if (-not (Get-Module -ListAvailable -Name AWSPowerShell)) {
     Write-Output "AWSPowerShell ya esta instalado"
 }
 
-# --- Crear script de sincronizacion (multi-folder) ---
+# --- Crear script de sincronizacion (escaneo recursivo) ---
 $syncScript = @'
 # =============================================================================
-# Sync-BoardFilesToS3.ps1 - Multi-Folder Board Files Sync Script
+# Sync-BoardFilesToS3.ps1 - Recursive SFTP Sync Script
+# =============================================================================
+# Escanea recursivamente toda la estructura bajo BoardFiles/ y sube archivos
+# nuevos a S3 preservando la ruta completa.
+# Ejemplo: Boards/Board_NDSBOTP/subfolder/file.csv
+#       -> s3://bucket/Boards/Board_NDSBOTP/subfolder/20260219_file.csv
+# Despues de subir, mueve el archivo a processed/ en su misma carpeta.
+# Ignora cualquier carpeta llamada "processed".
 # =============================================================================
 
 $ErrorActionPreference = "Continue"
-$BaseLandingPath = "C:\SFTP\BoardFiles\Landing"
-$BaseArchivePath = "C:\SFTP\BoardFiles\Archive"
-$LogPath = "C:\SFTP\Logs\sync.log"
+
+$BasePath = "C:\CEB_FTP_Data\SFTP"
+$LogPath = "C:\CEB_FTP_Data\Logs\sync.log"
 $BucketName = "data-do-ent-file-ingestion-test-landing"
 $AwsRegion = "us-east-1"
-$DatasetFolders = @("board-files", "nursing-files", "pharmacy")
+$SyncAfterDate = [DateTime]"2026-02-19"
 
 function Write-SyncLog {
     param([string]$Message, [string]$Level = "INFO")
@@ -136,7 +149,8 @@ function Get-FileStableSize {
 }
 
 Write-SyncLog "=========================================="
-Write-SyncLog "Iniciando sincronizacion multi-folder..."
+Write-SyncLog "Iniciando sincronizacion recursiva..."
+Write-SyncLog "Base: $BasePath"
 Write-SyncLog "Bucket: $BucketName"
 Write-SyncLog "=========================================="
 
@@ -144,77 +158,90 @@ $totalSuccess = 0
 $totalErrors = 0
 $totalSkipped = 0
 
-foreach ($datasetFolder in $DatasetFolders) {
-    $landingPath = Join-Path $BaseLandingPath $datasetFolder
-    $archivePath = Join-Path $BaseArchivePath $datasetFolder
-
-    if (-not (Test-Path $landingPath)) {
-        New-Item -ItemType Directory -Path $landingPath -Force | Out-Null
-    }
-    if (-not (Test-Path $archivePath)) {
-        New-Item -ItemType Directory -Path $archivePath -Force | Out-Null
+# Buscar TODOS los archivos recursivamente, excluyendo carpetas "processed"
+$allFiles = Get-ChildItem -Path $BasePath -File -Recurse -ErrorAction SilentlyContinue |
+    Where-Object {
+        $_.CreationTime -ge $SyncAfterDate -and
+        $_.DirectoryName -notmatch '\\processed(\\|$)'
     }
 
-    $files = Get-ChildItem -Path $landingPath -File -ErrorAction SilentlyContinue
-    if ($files.Count -eq 0) { continue }
+if ($allFiles.Count -eq 0) {
+    Write-SyncLog "No hay archivos nuevos para sincronizar"
+} else {
+    Write-SyncLog "Encontrados $($allFiles.Count) archivos nuevos (desde $SyncAfterDate)"
 
-    Write-SyncLog "[$datasetFolder] Encontrados $($files.Count) archivos"
-
-    foreach ($file in $files) {
+    foreach ($file in $allFiles) {
         $filePath = $file.FullName
         $fileName = $file.Name
-        Write-SyncLog "[$datasetFolder] Procesando: $fileName ($([math]::Round($file.Length / 1MB, 2)) MB)"
+        $fileDir = $file.DirectoryName
+
+        # Calcular ruta relativa desde BasePath para el S3 key
+        $relativePath = $fileDir.Substring($BasePath.Length).TrimStart('\') -replace '\\', '/'
+        $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+        $s3Key = "$relativePath/${timestamp}_$fileName"
+
+        Write-SyncLog "[$relativePath] Procesando: $fileName ($([math]::Round($file.Length / 1MB, 2)) MB)"
 
         if (-not (Test-FileNotLocked -FilePath $filePath)) {
-            Write-SyncLog "[$datasetFolder] Archivo bloqueado, omitiendo: $fileName" -Level "WARN"
+            Write-SyncLog "[$relativePath] Archivo bloqueado, omitiendo: $fileName" -Level "WARN"
             $totalSkipped++
             continue
         }
 
         if (-not (Get-FileStableSize -FilePath $filePath -WaitSeconds 3)) {
-            Write-SyncLog "[$datasetFolder] Archivo en transferencia, omitiendo: $fileName" -Level "WARN"
+            Write-SyncLog "[$relativePath] Archivo en transferencia, omitiendo: $fileName" -Level "WARN"
             $totalSkipped++
             continue
         }
 
         try {
-            $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-            $s3Key = "$datasetFolder/${timestamp}_$fileName"
-
-            Write-SyncLog "[$datasetFolder] Subiendo a s3://$BucketName/$s3Key"
+            Write-SyncLog "[$relativePath] Subiendo a s3://$BucketName/$s3Key"
             Write-S3Object -BucketName $BucketName -File $filePath -Key $s3Key -Region $AwsRegion
 
-            $archiveFileName = "${timestamp}_$fileName"
-            $archiveDest = Join-Path $archivePath $archiveFileName
-            Move-Item -Path $filePath -Destination $archiveDest -Force
-            Write-SyncLog "[$datasetFolder] OK: $fileName -> $s3Key"
+            # Mover a processed/ en la misma carpeta
+            $processedPath = Join-Path $fileDir "processed"
+            if (-not (Test-Path $processedPath)) {
+                New-Item -ItemType Directory -Path $processedPath -Force | Out-Null
+            }
+            Move-Item -Path $filePath -Destination (Join-Path $processedPath $fileName) -Force
+
+            Write-SyncLog "[$relativePath] OK: $fileName -> $s3Key"
             $totalSuccess++
         } catch {
-            Write-SyncLog "[$datasetFolder] ERROR: $fileName - $($_.Exception.Message)" -Level "ERROR"
+            Write-SyncLog "[$relativePath] ERROR: $fileName - $($_.Exception.Message)" -Level "ERROR"
             $totalErrors++
         }
     }
 }
 
-Write-SyncLog "Completado: Exitosos=$totalSuccess | Errores=$totalErrors | Omitidos=$totalSkipped"
+Write-SyncLog "=========================================="
+Write-SyncLog "Sincronizacion completada"
+Write-SyncLog "  - Exitosos: $totalSuccess"
+Write-SyncLog "  - Errores: $totalErrors"
+Write-SyncLog "  - Omitidos: $totalSkipped"
+Write-SyncLog "=========================================="
 
-# Limpieza de archivos antiguos (mas de 30 dias)
+# Limpieza: Eliminar archivos en processed/ con mas de 30 dias
 $cutoffDate = (Get-Date).AddDays(-30)
-foreach ($datasetFolder in $DatasetFolders) {
-    $archivePath = Join-Path $BaseArchivePath $datasetFolder
-    if (Test-Path $archivePath) {
-        Get-ChildItem -Path $archivePath -File | Where-Object { $_.LastWriteTime -lt $cutoffDate } | ForEach-Object {
-            Remove-Item $_.FullName -Force
-            Write-SyncLog "[$datasetFolder] Eliminado antiguo: $($_.Name)"
-        }
+$oldFiles = Get-ChildItem -Path $BasePath -File -Recurse -ErrorAction SilentlyContinue |
+    Where-Object {
+        $_.DirectoryName -match '\\processed(\\|$)' -and
+        $_.LastWriteTime -lt $cutoffDate
+    }
+
+if ($oldFiles.Count -gt 0) {
+    Write-SyncLog "Limpiando $($oldFiles.Count) archivos antiguos de processed/..."
+    foreach ($old in $oldFiles) {
+        Remove-Item $old.FullName -Force
+        Write-SyncLog "Eliminado: $($old.FullName.Substring($BasePath.Length))"
     }
 }
 
 Write-SyncLog "Script finalizado"
 '@
 
-Set-Content -Path "C:\SFTP\Scripts\Sync-BoardFilesToS3.ps1" -Value $syncScript -Force
-Write-Output "Script de sync creado en C:\SFTP\Scripts\Sync-BoardFilesToS3.ps1"
+Set-Content -Path "C:\CEB_FTP_Data\Scripts\Sync-BoardFilesToS3.ps1" -Value $syncScript -Force
+Write-Output "Script de sync creado en C:\CEB_FTP_Data\Scripts\Sync-BoardFilesToS3.ps1"
 
 # --- Crear tarea programada (cada 5 minutos) ---
 $taskName = "BoardFiles-S3-Sync"
@@ -226,7 +253,7 @@ if ($existingTask) {
 }
 
 $action = New-ScheduledTaskAction -Execute "powershell.exe" `
-    -Argument "-NoProfile -ExecutionPolicy Bypass -File C:\SFTP\Scripts\Sync-BoardFilesToS3.ps1"
+    -Argument "-NoProfile -ExecutionPolicy Bypass -File C:\CEB_FTP_Data\Scripts\Sync-BoardFilesToS3.ps1"
 $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) `
     -RepetitionInterval (New-TimeSpan -Minutes 5) `
     -RepetitionDuration (New-TimeSpan -Days 9999)
@@ -257,12 +284,12 @@ if (-not [System.Diagnostics.EventLog]::SourceExists("BoardFileSync")) {
 Write-Output ""
 Write-Output "============================================="
 Write-Output " Despliegue completado!"
-Write-Output " - Script:  C:\SFTP\Scripts\Sync-BoardFilesToS3.ps1"
+Write-Output " - Script:  C:\CEB_FTP_Data\Scripts\Sync-BoardFilesToS3.ps1"
 Write-Output " - Tarea:   $taskName (cada 5 min)"
-Write-Output " - Folders: board-files, nursing-files, pharmacy"
-Write-Output " - Landing: C:\SFTP\BoardFiles\Landing\{folder}"
-Write-Output " - Archive: C:\SFTP\BoardFiles\Archive\{folder}"
-Write-Output " - Logs:    C:\SFTP\Logs\sync.log"
+Write-Output " - Boards: C:\CEB_FTP_Data\SFTP\Boards\Board_*"
+Write-Output " - Providers: C:\CEB_FTP_Data\SFTP\Providers"
+Write-Output " - Processed: {folder}\processed\"
+Write-Output " - Logs:    C:\CEB_FTP_Data\Logs\sync.log"
 Write-Output "============================================="
 POWERSHELL_EOF
 
