@@ -7,9 +7,10 @@ Script PowerShell que sincroniza archivos desde el servidor legacy SFTP (`legacy
 **Flujo:**
 ```
 C:\CEB_FTP_Data\SFTP\
-  ├── Boards\Board_*\archivo.csv     ──►  s3://BUCKET/Boards/Board_*/20260219_143000_archivo.csv
-  ├── Providers\archivo.csv           ──►  s3://BUCKET/Providers/20260219_143000_archivo.csv
-  └── (otras carpetas...)             ──►  s3://BUCKET/{carpeta}/20260219_143000_archivo.csv
+  ├── Boards\Board_NDSBOTP\archivo.csv        ──►  s3://BUCKET/Boards/Board_NDSBOTP/20260219_143000_archivo.csv
+  ├── Boards\Board_NDSWE\archivo.csv          ──►  s3://BUCKET/Boards/Board_NDSWE/20260219_143000_archivo.csv
+  ├── Providers\Providers_XXX\archivo.csv     ──►  s3://BUCKET/Providers/Providers_XXX/20260219_143000_archivo.csv
+  └── (otras carpetas...)                     ──►  s3://BUCKET/{ruta_relativa}/20260219_143000_archivo.csv
 ```
 
 Despues de subir cada archivo a S3, lo mueve a una subcarpeta `processed/` en su misma ubicacion.
@@ -392,7 +393,28 @@ C:\CEB_FTP_Data\
     │   ├── Board_NDSBOTP\
     │   ├── Board_NDSWE\
     │   ├── Board_NHMS\
-    │   ├── ... (26+ Board_*)
+    │   ├── Board_NHOPLC\
+    │   ├── Board_NMM\
+    │   ├── Board_NMMMedical\
+    │   ├── Board_NMN\
+    │   ├── Board_NMRealEstate\
+    │   ├── Board_NVBOM\
+    │   ├── Board_NVPT\
+    │   ├── Board_OBMLS\
+    │   ├── Board_OKBCE\
+    │   ├── Board_OKDENT\
+    │   ├── Board_OKREC\
+    │   ├── Board_OSBOE\
+    │   ├── Board_SCAG\
+    │   ├── Board_SCRQSA\
+    │   ├── Board_SDBMT\
+    │   ├── Board_TFSC\
+    │   ├── Board_TMB\
+    │   ├── Board_TNDCI\
+    │   ├── Board_TSBPE\
+    │   ├── Board_TXBHEC\
+    │   ├── Board_TXOPT\
+    │   ├── Board_VADental\
     │   └── Board_VAPT\
     ├── CEB_FTP_TESTER\
     ├── CEBroker\
@@ -402,11 +424,14 @@ C:\CEB_FTP_Data\
     ├── OtherUsers\
     ├── Prehire\
     ├── Providers\
+    │   ├── Providers_XXX\
+    │   ├── Providers_YYY\
+    │   └── ... (subcarpetas Providers_*)
     ├── sre_synthetic\
     └── States\
 ```
 
-El script escanea **todas** las carpetas recursivamente. Si solo se necesitan `Boards/` y `Providers/`, se puede limitar cambiando la variable `$BasePath` o agregando un filtro adicional.
+El script escanea **todas** las carpetas bajo `C:\CEB_FTP_Data\SFTP\` recursivamente, incluyendo subcarpetas de `Boards\Board_*\` y `Providers\Providers_*\`. Cualquier archivo nuevo en cualquier nivel de profundidad sera detectado y subido a S3 preservando la ruta relativa.
 
 ---
 
