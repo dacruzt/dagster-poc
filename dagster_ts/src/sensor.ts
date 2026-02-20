@@ -19,6 +19,11 @@ export interface RunRequest {
   tags: Record<string, string>;
 }
 
+export interface SensorOutput {
+  runRequests: RunRequest[];
+  receiptHandles: string[];
+}
+
 export interface SensorOptions {
   sqs: SQSResource;
   s3: S3Resource;
@@ -88,11 +93,13 @@ function parseS3Records(body: string): ParsedRecord[] {
 
 /**
  * Process a single SQS polling cycle.
- * Returns an array of RunRequests for files that need processing.
+ * Returns run requests and receipt handles. Messages are NOT deleted here —
+ * the Python sensor deletes them after successfully yielding RunRequests to Dagster.
  */
-export async function pollSensor(options: SensorOptions): Promise<RunRequest[]> {
+export async function pollSensor(options: SensorOptions): Promise<SensorOutput> {
   const { sqs, s3, logger } = options;
   const runRequests: RunRequest[] = [];
+  const receiptHandles: string[] = [];
 
   const messages = await sqs.receiveMessages(10);
 
@@ -152,9 +159,9 @@ export async function pollSensor(options: SensorOptions): Promise<RunRequest[]> 
         });
       }
 
-      // Delete message from queue after processing
+      // Collect receipt handle for deletion by Python after successful run creation
       if (message.ReceiptHandle) {
-        await sqs.deleteMessage(message.ReceiptHandle);
+        receiptHandles.push(message.ReceiptHandle);
       }
     } catch (error) {
       if (error instanceof SyntaxError) {
@@ -165,7 +172,7 @@ export async function pollSensor(options: SensorOptions): Promise<RunRequest[]> 
     }
   }
 
-  return runRequests;
+  return { runRequests, receiptHandles };
 }
 
 /**
@@ -185,9 +192,9 @@ export async function runSensorLoop(
 
   while (!signal?.aborted) {
     try {
-      const requests = await pollSensor(options);
+      const { runRequests } = await pollSensor(options);
 
-      for (const request of requests) {
+      for (const request of runRequests) {
         await onRunRequest(request);
       }
     } catch (error) {

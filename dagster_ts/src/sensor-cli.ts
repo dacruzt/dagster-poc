@@ -9,7 +9,8 @@
  * Usage: node dist/sensor-cli.js
  * Env: AWS_DEFAULT_REGION, and either SQS_QUEUE_URL or S3_POLLING_ENABLED + S3_BUCKET_NAME + DYNAMO_TABLE_NAME
  *
- * Output: JSON array of run requests on stdout.
+ * Output: JSON object with runRequests and receiptHandles on stdout.
+ * Messages are NOT deleted here — Python deletes after successful run creation.
  */
 
 import { SQSResource, S3Resource } from "./resources";
@@ -28,7 +29,7 @@ async function main() {
     error: (msg: string) => console.error(`[ERROR] ${msg}`),
   };
 
-  let requests;
+  let output: { runRequests: unknown[]; receiptHandles: string[] };
 
   if (useS3Polling) {
     const bucketName = process.env.S3_BUCKET_NAME;
@@ -40,13 +41,15 @@ async function main() {
     }
 
     logger.info("Using S3 polling mode");
-    requests = await pollS3Sensor({
+    const requests = await pollS3Sensor({
       s3,
       bucketName,
       dynamoTableName,
       region,
       logger,
     });
+    // S3 polling mode has no SQS receipt handles
+    output = { runRequests: requests, receiptHandles: [] };
   } else {
     const queueUrl = process.env.SQS_QUEUE_URL;
 
@@ -57,11 +60,11 @@ async function main() {
 
     logger.info("Using SQS polling mode");
     const sqs = new SQSResource({ regionName: region, queueUrl });
-    requests = await pollSensor({ sqs, s3, logger });
+    output = await pollSensor({ sqs, s3, logger });
   }
 
   // Output clean JSON to stdout (Python reads this)
-  console.log(JSON.stringify(requests));
+  console.log(JSON.stringify(output));
 }
 
 main().catch((err) => {
