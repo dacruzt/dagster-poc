@@ -16,7 +16,7 @@ aws dynamodb put-item \
     "sk": {"S": "CONFIG"},
     "dataset_id": {"S": "Boards"},
     "schema_version": {"S": "1.0"},
-    "compute_target": {"S": "LAMBDA"},
+    "compute_target": {"S": "AUTO"},
     "allowed_extensions": {"L": [{"S": ".csv"}, {"S": ".json"}, {"S": ".xls"}, {"S": ".xlsx"}]},
     "required_columns": {"L": [
       {"M": {"name": {"S": "date"}, "type": {"S": "date"}}},
@@ -36,11 +36,27 @@ aws dynamodb put-item \
     "sk": {"S": "CONFIG"},
     "dataset_id": {"S": "Providers"},
     "schema_version": {"S": "1.0"},
-    "compute_target": {"S": "LAMBDA"},
+    "compute_target": {"S": "AUTO"},
     "allowed_extensions": {"L": [{"S": ".csv"}, {"S": ".json"}, {"S": ".xls"}, {"S": ".xlsx"}]},
     "required_columns": {"L": []},
     "description": {"S": "Provider data files"}
   }'
 echo "Seeded Providers config."
 
-echo "Done. All 2 dataset configs seeded (Boards, Providers)."
+# --- Pharmacy ---
+aws dynamodb put-item \
+  --table-name "$TABLE_NAME" \
+  --region "$REGION" \
+  --item '{
+    "pk": {"S": "DATASET#Pharmacy"},
+    "sk": {"S": "CONFIG"},
+    "dataset_id": {"S": "Pharmacy"},
+    "schema_version": {"S": "1.0"},
+    "compute_target": {"S": "AUTO"},
+    "allowed_extensions": {"L": [{"S": ".csv"}, {"S": ".json"}, {"S": ".xls"}, {"S": ".xlsx"}]},
+    "required_columns": {"L": []},
+    "description": {"S": "Pharmacy data files"}
+  }'
+echo "Seeded Pharmacy config."
+
+echo "Done. All 3 dataset configs seeded (Boards, Providers, Pharmacy)."

@@ -43,8 +43,10 @@ export async function handler(event: LambdaEvent): Promise<LambdaResponse> {
     };
   }
 
-  if (!event.dynamoTable) {
-    const error = "Missing required field: dynamoTable";
+  // Use event payload or fall back to Lambda env var
+  const dynamoTable = event.dynamoTable || process.env.DYNAMO_TABLE;
+  if (!dynamoTable) {
+    const error = "Missing required field: dynamoTable (not in event or DYNAMO_TABLE env)";
     pipes.log(error, "error");
     return {
       statusCode: 400,
@@ -63,7 +65,7 @@ export async function handler(event: LambdaEvent): Promise<LambdaResponse> {
     bucket: event.s3Bucket,
     key: event.s3Key,
     region: event.region || process.env.AWS_REGION || "us-east-1",
-    dynamoTable: event.dynamoTable,
+    dynamoTable: dynamoTable,
     chunkSizeMB: event.chunkSizeMB || 10,
     dagsterRunId: event.dagsterRunId,
   };

@@ -47,7 +47,8 @@ $ErrorActionPreference = "Stop"
 $baseFolders = @(
     "C:\CEB_FTP_Data\Scripts",
     "C:\CEB_FTP_Data\Logs",
-    "C:\CEB_FTP_Data\SFTP\Providers\processed"
+    "C:\CEB_FTP_Data\SFTP\Providers\processed",
+    "C:\CEB_FTP_Data\SFTP\Pharmacy\processed"
 )
 
 foreach ($folder in $baseFolders) {
@@ -76,7 +77,26 @@ foreach ($board in $boardFolders) {
         New-Item -ItemType Directory -Path $path -Force | Out-Null
     }
 }
-Write-Output "Creados $($boardFolders.Count) Board_* subfolders + Providers"
+# Carpetas adicionales (replica de legacy-sftp-02)
+$otherFolders = @(
+    "CEB_FTP_TESTER",
+    "CEBroker",
+    "dagster_user",
+    "Employers",
+    "LicenseVerification",
+    "OtherUsers",
+    "Prehire",
+    "sre_synthetic",
+    "States"
+)
+
+foreach ($folder in $otherFolders) {
+    $path = "C:\CEB_FTP_Data\SFTP\$folder"
+    if (-not (Test-Path $path)) {
+        New-Item -ItemType Directory -Path $path -Force | Out-Null
+    }
+}
+Write-Output "Creados $($boardFolders.Count) Board_* subfolders + Providers + $($otherFolders.Count) carpetas adicionales"
 
 # --- Instalar AWS PowerShell si no esta disponible ---
 if (-not (Get-Module -ListAvailable -Name AWSPowerShell)) {

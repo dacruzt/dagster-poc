@@ -9,7 +9,7 @@ import json
 import os
 import subprocess
 
-from dagster import RunConfig, RunRequest, SensorEvaluationContext, sensor
+from dagster import DefaultSensorStatus, RunConfig, RunRequest, SensorEvaluationContext, sensor
 
 from ..jobs.fargate_job import fargate_job
 from ..jobs.lambda_job import lambda_job
@@ -22,7 +22,7 @@ SENSOR_CLI = os.path.join(
 )
 
 
-@sensor(jobs=[fargate_job, lambda_job], minimum_interval_seconds=30)
+@sensor(jobs=[fargate_job, lambda_job], minimum_interval_seconds=30, default_status=DefaultSensorStatus.RUNNING)
 def s3_file_sensor(context: SensorEvaluationContext):
     """
     Sensor that calls the TypeScript sensor-cli to poll SQS for S3 file events.

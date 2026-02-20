@@ -42,7 +42,7 @@ interface DatasetConfig {
   sk: string;
   dataset_id: string;
   schema_version: string;
-  compute_target: "LAMBDA" | "FARGATE";
+  compute_target: "LAMBDA" | "FARGATE" | "AUTO";
   allowed_extensions: string[];
   required_columns: ColumnDef[];
   description?: string;
@@ -52,7 +52,7 @@ interface EnrichmentData {
   registered: boolean;
   dataset_id?: string;
   schema_version?: string;
-  compute_target?: "LAMBDA" | "FARGATE";
+  compute_target?: "LAMBDA" | "FARGATE" | "AUTO";
   validation_status?: "valid" | "invalid" | "skipped";
   validation_error?: string;
 }

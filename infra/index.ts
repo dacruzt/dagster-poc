@@ -617,6 +617,7 @@ function Write-Log {
 New-Item -ItemType Directory -Path "C:\\CEB_FTP_Data\\Scripts" -Force
 New-Item -ItemType Directory -Path "C:\\CEB_FTP_Data\\Logs" -Force
 New-Item -ItemType Directory -Path "C:\\CEB_FTP_Data\\SFTP\\Providers\\processed" -Force
+New-Item -ItemType Directory -Path "C:\\CEB_FTP_Data\\SFTP\\Pharmacy\\processed" -Force
 
 # Board_* subfolders (replica de legacy-sftp-02)
 $boardFolders = @(
@@ -633,7 +634,24 @@ foreach ($board in $boardFolders) {
     New-Item -ItemType Directory -Path "C:\\CEB_FTP_Data\\SFTP\\Boards\\$board\\processed" -Force | Out-Null
 }
 
-Write-Log "Estructura de carpetas creada: $($boardFolders.Count) Board_* folders + Providers"
+# Carpetas adicionales (replica de legacy-sftp-02)
+$otherFolders = @(
+    "CEB_FTP_TESTER",
+    "CEBroker",
+    "dagster_user",
+    "Employers",
+    "LicenseVerification",
+    "OtherUsers",
+    "Prehire",
+    "sre_synthetic",
+    "States"
+)
+
+foreach ($folder in $otherFolders) {
+    New-Item -ItemType Directory -Path "C:\\CEB_FTP_Data\\SFTP\\$folder" -Force | Out-Null
+}
+
+Write-Log "Estructura de carpetas creada: $($boardFolders.Count) Board_* folders + Providers + $($otherFolders.Count) carpetas adicionales"
 
 # -----------------------------------------------------------------------------
 # Instalar y configurar OpenSSH Server
@@ -678,7 +696,7 @@ $sshdConfig = @"
 
 # SFTP Configuration for BoardUser
 Match User BoardUser
-    ChrootDirectory C:\\CEB_FTP_Data\\SFTP
+    ChrootDirectory C:\\CEB_FTP_Data
     ForceCommand internal-sftp
     AllowTcpForwarding no
     X11Forwarding no
@@ -686,23 +704,25 @@ Match User BoardUser
 
 Add-Content -Path "C:\\ProgramData\\ssh\\sshd_config" -Value $sshdConfig
 
-# Configurar permisos de carpeta
-$acl = Get-Acl "C:\\CEB_FTP_Data\\SFTP"
-$acl.SetAccessRuleProtection($true, $false)
+# Configurar permisos: chroot dir (CEB_FTP_Data) solo admin/system
+$aclChroot = Get-Acl "C:\\CEB_FTP_Data"
+$aclChroot.SetAccessRuleProtection($true, $false)
+$aclChroot.AddAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule("BUILTIN\\Administrators", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")))
+$aclChroot.AddAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule("NT AUTHORITY\\SYSTEM", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")))
+$aclChroot.AddAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule("BoardUser", "ReadAndExecute", "ContainerInherit,ObjectInherit", "None", "Allow")))
+Set-Acl -Path "C:\\CEB_FTP_Data" $aclChroot
 
-$adminRule = New-Object System.Security.AccessControl.FileSystemAccessRule("BUILTIN\\Administrators", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
-$acl.AddAccessRule($adminRule)
+# Permisos de escritura para BoardUser en SFTP/ y subcarpetas
+$aclSftp = Get-Acl "C:\\CEB_FTP_Data\\SFTP"
+$aclSftp.SetAccessRuleProtection($true, $false)
+$aclSftp.AddAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule("BUILTIN\\Administrators", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")))
+$aclSftp.AddAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule("NT AUTHORITY\\SYSTEM", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")))
+$aclSftp.AddAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule("BoardUser", "Modify", "ContainerInherit,ObjectInherit", "None", "Allow")))
+Set-Acl -Path "C:\\CEB_FTP_Data\\SFTP" $aclSftp
 
-$systemRule = New-Object System.Security.AccessControl.FileSystemAccessRule("NT AUTHORITY\\SYSTEM", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
-$acl.AddAccessRule($systemRule)
-
-$userRule = New-Object System.Security.AccessControl.FileSystemAccessRule("BoardUser", "Modify", "ContainerInherit,ObjectInherit", "None", "Allow")
-$acl.AddAccessRule($userRule)
-
-Set-Acl -Path "C:\\CEB_FTP_Data\\SFTP" $acl
 Restart-Service sshd
 
-Write-Log "SFTP chroot configurado"
+Write-Log "SFTP chroot configurado en C:\\CEB_FTP_Data"
 
 # -----------------------------------------------------------------------------
 # Script de Sincronizacion a S3
@@ -741,6 +761,8 @@ Write-Log "Setup completado exitosamente!"
 Write-Log "- Usuario SFTP: BoardUser"
 Write-Log "- Boards: C:\\CEB_FTP_Data\\SFTP\\Boards\\Board_*"
 Write-Log "- Providers: C:\\CEB_FTP_Data\\SFTP\\Providers"
+Write-Log "- Pharmacy: C:\\CEB_FTP_Data\\SFTP\\Pharmacy"
+Write-Log "- Otras carpetas: CEB_FTP_TESTER, CEBroker, dagster_user, Employers, LicenseVerification, OtherUsers, Prehire, sre_synthetic, States"
 Write-Log "- Script de sync: C:\\CEB_FTP_Data\\Scripts\\Sync-BoardFilesToS3.ps1"
 Write-Log "- Tarea programada: BoardFiles-S3-Sync (cada 5 min)"
 Write-Log "- Bucket S3: ${bucketName}"

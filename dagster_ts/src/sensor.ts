@@ -31,7 +31,7 @@ interface EnrichmentData {
   registered: boolean;
   dataset_id?: string;
   schema_version?: string;
-  compute_target?: "LAMBDA" | "FARGATE";
+  compute_target?: "LAMBDA" | "FARGATE" | "AUTO";
 }
 
 interface ParsedRecord {
@@ -115,15 +115,14 @@ export async function pollSensor(options: SensorOptions): Promise<RunRequest[]> 
         logger.info(`File detected: s3://${record.bucket}/${record.key}`);
         logger.info(`File size: ${(record.size / (1024 * 1024)).toFixed(2)} MB`);
 
-        // Use compute_target from enrichment if available, otherwise size-based
+        // Routing: LAMBDA = always Lambda, AUTO/absent = size-based routing
         let taskSize: string;
-        if (record.enrichment_data?.compute_target) {
-          taskSize = record.enrichment_data.compute_target === "LAMBDA"
-            ? "lambda"
-            : s3.getRecommendedTaskSize(record.size);
-          logger.info(`Compute target from registry: ${record.enrichment_data.compute_target}`);
+        if (record.enrichment_data?.compute_target === "LAMBDA") {
+          taskSize = "lambda";
+          logger.info(`Compute target forced: LAMBDA`);
         } else {
           taskSize = s3.getRecommendedTaskSize(record.size);
+          logger.info(`Compute target: AUTO (size-based) → ${taskSize}`);
         }
         logger.info(`Recommended task size: ${taskSize}`);
 
