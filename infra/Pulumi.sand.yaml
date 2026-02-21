@@ -3,4 +3,4 @@ config:
   dagster-poc-infra:environment: sand
   dagster-poc-infra:vpcId: vpc-063bc9a57fb3fe72d
   dagster-poc-infra:subnetIds: '["subnet-011694f92eaa64be2","subnet-0d975036880e8b19d"]'
-encryptionsalt: v1:04/p4EZMTcA=:v1:HUDnwAmt3CVvUqeM:llZbPl0u9AI1bCSpRWwcRKT/rj/hwA==
+encryptionsalt: v1:F0POiK4IAh4=:v1:QWZb0zUNjc3uLWkA:i2hndNubmbYbwsyqWuT/GMiBsXpi5g==
