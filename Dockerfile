@@ -18,6 +18,7 @@ RUN cd dagster_ts && npm ci && npm run build
 COPY pyproject.toml .
 COPY dagster_poc/ dagster_poc/
 COPY workspace.yaml .
+COPY .env .
 
 # Instalar dependencias Python
 RUN pip install --no-cache-dir -e .
