@@ -1,18 +1,18 @@
 # =============================================================================
 # Sync-BoardFilesToS3.ps1 - Recursive SFTP Sync Script
 # =============================================================================
-# Escanea recursivamente toda la estructura bajo BoardFiles/ y sube archivos
-# nuevos a S3 preservando la ruta completa.
-# Ejemplo: Boards/Board_NDSBOTP/subfolder/file.csv
+# Recursively scans the entire structure under BoardFiles/ and uploads new files
+# to S3, preserving the full path.
+# Example: Boards/Board_NDSBOTP/subfolder/file.csv
 #       -> s3://bucket/Boards/Board_NDSBOTP/subfolder/20260219_file.csv
-# Despues de subir, mueve el archivo a processed/ en su misma carpeta.
-# Ignora cualquier carpeta llamada "processed".
+# After uploading, moves the file to processed/ in its same folder.
+# Ignores any folder named "processed".
 # =============================================================================
 
 $ErrorActionPreference = "Continue"
 
 # -----------------------------------------------------------------------------
-# CONFIGURACION
+# CONFIGURATION
 # -----------------------------------------------------------------------------
 $BasePath = "C:\CEB_FTP_Data\SFTP"
 $LogPath = "C:\CEB_FTP_Data\Logs\sync.log"
@@ -21,7 +21,7 @@ $AwsRegion = "us-east-1"
 $SyncAfterDate = [DateTime]"2026-02-19"
 
 # -----------------------------------------------------------------------------
-# FUNCIONES
+# FUNCTIONS
 # -----------------------------------------------------------------------------
 
 function Write-SyncLog {
@@ -68,11 +68,11 @@ function Get-FileStableSize {
 }
 
 # -----------------------------------------------------------------------------
-# PROCESO PRINCIPAL - Escaneo recursivo
+# MAIN PROCESS - Recursive scan
 # -----------------------------------------------------------------------------
 
 Write-SyncLog "=========================================="
-Write-SyncLog "Iniciando sincronizacion recursiva..."
+Write-SyncLog "Starting recursive sync..."
 Write-SyncLog "Base: $BasePath"
 Write-SyncLog "Bucket: $BucketName"
 Write-SyncLog "=========================================="
@@ -81,7 +81,7 @@ $totalSuccess = 0
 $totalErrors = 0
 $totalSkipped = 0
 
-# Buscar TODOS los archivos recursivamente, excluyendo carpetas "processed"
+# Find ALL files recursively, excluding "processed" folders
 $allFiles = Get-ChildItem -Path $BasePath -File -Recurse -ErrorAction SilentlyContinue |
     Where-Object {
         $_.CreationTime -ge $SyncAfterDate -and
@@ -89,39 +89,39 @@ $allFiles = Get-ChildItem -Path $BasePath -File -Recurse -ErrorAction SilentlyCo
     }
 
 if ($allFiles.Count -eq 0) {
-    Write-SyncLog "No hay archivos nuevos para sincronizar"
+    Write-SyncLog "No new files to sync"
 } else {
-    Write-SyncLog "Encontrados $($allFiles.Count) archivos nuevos (desde $SyncAfterDate)"
+    Write-SyncLog "Found $($allFiles.Count) new files (since $SyncAfterDate)"
 
     foreach ($file in $allFiles) {
         $filePath = $file.FullName
         $fileName = $file.Name
         $fileDir = $file.DirectoryName
 
-        # Calcular ruta relativa desde BasePath para el S3 key
+        # Calculate relative path from BasePath for the S3 key
         $relativePath = $fileDir.Substring($BasePath.Length).TrimStart('\') -replace '\\', '/'
         $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
         $s3Key = "$relativePath/${timestamp}_$fileName"
 
-        Write-SyncLog "[$relativePath] Procesando: $fileName ($([math]::Round($file.Length / 1MB, 2)) MB)"
+        Write-SyncLog "[$relativePath] Processing: $fileName ($([math]::Round($file.Length / 1MB, 2)) MB)"
 
         if (-not (Test-FileNotLocked -FilePath $filePath)) {
-            Write-SyncLog "[$relativePath] Archivo bloqueado, omitiendo: $fileName" -Level "WARN"
+            Write-SyncLog "[$relativePath] File is locked, skipping: $fileName" -Level "WARN"
             $totalSkipped++
             continue
         }
 
         if (-not (Get-FileStableSize -FilePath $filePath -WaitSeconds 3)) {
-            Write-SyncLog "[$relativePath] Archivo en transferencia, omitiendo: $fileName" -Level "WARN"
+            Write-SyncLog "[$relativePath] File is being transferred, skipping: $fileName" -Level "WARN"
             $totalSkipped++
             continue
         }
 
         try {
-            Write-SyncLog "[$relativePath] Subiendo a s3://$BucketName/$s3Key"
+            Write-SyncLog "[$relativePath] Uploading to s3://$BucketName/$s3Key"
             Write-S3Object -BucketName $BucketName -File $filePath -Key $s3Key -Region $AwsRegion
 
-            # Mover a processed/ en la misma carpeta
+            # Move to processed/ in the same folder
             $processedPath = Join-Path $fileDir "processed"
             if (-not (Test-Path $processedPath)) {
                 New-Item -ItemType Directory -Path $processedPath -Force | Out-Null
@@ -138,14 +138,14 @@ if ($allFiles.Count -eq 0) {
 }
 
 Write-SyncLog "=========================================="
-Write-SyncLog "Sincronizacion completada"
-Write-SyncLog "  - Exitosos: $totalSuccess"
-Write-SyncLog "  - Errores: $totalErrors"
-Write-SyncLog "  - Omitidos: $totalSkipped"
+Write-SyncLog "Sync completed"
+Write-SyncLog "  - Successful: $totalSuccess"
+Write-SyncLog "  - Errors: $totalErrors"
+Write-SyncLog "  - Skipped: $totalSkipped"
 Write-SyncLog "=========================================="
 
 # -----------------------------------------------------------------------------
-# LIMPIEZA: Eliminar archivos en processed/ con mas de 30 dias
+# CLEANUP: Delete files in processed/ older than 30 days
 # -----------------------------------------------------------------------------
 $cutoffDate = (Get-Date).AddDays(-30)
 $oldFiles = Get-ChildItem -Path $BasePath -File -Recurse -ErrorAction SilentlyContinue |
@@ -155,11 +155,11 @@ $oldFiles = Get-ChildItem -Path $BasePath -File -Recurse -ErrorAction SilentlyCo
     }
 
 if ($oldFiles.Count -gt 0) {
-    Write-SyncLog "Limpiando $($oldFiles.Count) archivos antiguos de processed/..."
+    Write-SyncLog "Cleaning $($oldFiles.Count) old files from processed/..."
     foreach ($old in $oldFiles) {
         Remove-Item $old.FullName -Force
-        Write-SyncLog "Eliminado: $($old.FullName.Substring($BasePath.Length))"
+        Write-SyncLog "Deleted: $($old.FullName.Substring($BasePath.Length))"
     }
 }
 
-Write-SyncLog "Script finalizado"
+Write-SyncLog "Script finished"
