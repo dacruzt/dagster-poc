@@ -118,40 +118,74 @@ Write-SyncLog "  - Skipped: $totalSkipped"
 Write-SyncLog "=========================================="
 
 # CLEANUP: Delete files in processed/ older than configurable retention period
+
+# Usar $SyncAfterDate como fecha mínima para verificar en S3
 $cutoffDate = (Get-Date).AddDays(-$RetentionDays)
+
+# Solo considerar archivos en processed con LastWriteTime >= $SyncAfterDate y < $cutoffDate
 $oldFiles = Get-ChildItem -Path $BasePath -File -Recurse -ErrorAction SilentlyContinue |
-    Where-Object { $_.DirectoryName -match 'processed$' -and $_.LastWriteTime -lt $cutoffDate }
+    Where-Object {
+        $_.DirectoryName -match 'processed$' -and
+        $_.LastWriteTime -lt $cutoffDate -and
+        $_.LastWriteTime -ge $SyncAfterDate
+    }
+
 
 $deletedCount = 0
 if ($oldFiles.Count -gt 0) {
     Write-SyncLog "Cleaning $($oldFiles.Count) old files from processed/..."
-    foreach ($old in $oldFiles) {
-        $oldName = $old.FullName.Substring($BasePath.Length)
-        $oldDate = $old.LastWriteTime
-        Write-SyncLog "Candidate for deletion: $oldName (LastWrite: $oldDate)"
 
-        # Check existence in S3 before deleting
-        $relativeOldPath = $old.DirectoryName.Substring($BasePath.Length).TrimStart('\') -replace '\\', '/'
-        $s3KeyPattern = "$relativeOldPath/*_$($old.Name)"
-        $existsInS3 = $false
+    # Agrupar archivos por carpeta processed
+    $groupedOldFiles = $oldFiles | Group-Object { $_.DirectoryName }
+
+    foreach ($group in $groupedOldFiles) {
+        $dir = $group.Name
+        $relativeOldPath = $dir.Substring($BasePath.Length).TrimStart('\') -replace '\\', '/'
+        Write-SyncLog "Checking S3 for processed folder: $relativeOldPath"
+        $s3Objects = @()
         try {
             $s3Objects = Get-S3Object -BucketName $BucketName -Region $AwsRegion -KeyPrefix $relativeOldPath
-            foreach ($obj in $s3Objects) {
-                if ($obj.Key -like "*$($old.Name)") {
-                    $existsInS3 = $true
-                    break
-                }
-            }
         } catch {
-            Write-SyncLog "ERROR: Could not verify S3 existence for $oldName - $($_.Exception.Message)" -Level "ERROR"
+            Write-SyncLog "ERROR: Could not get S3 objects for $relativeOldPath - $($_.Exception.Message)" -Level "ERROR"
         }
 
-        if ($existsInS3) {
-            Remove-Item $old.FullName -Force
-            Write-SyncLog "Deleted: $oldName"
-            $deletedCount++
-        } else {
-            Write-SyncLog "SKIPPED deletion (not found in S3): $oldName" -Level "WARN"
+        # Crear diccionario: nombre archivo -> lista de fechas en S3
+        $s3FileDates = @{}
+        foreach ($obj in $s3Objects) {
+            if ($obj.Key -match "([0-9]{8}_[0-9]{6})_(.+)$") {
+                $dateStr = $matches[1]
+                $nameStr = $matches[2]
+                $dateObj = $null
+                try { $dateObj = [datetime]::ParseExact($dateStr, 'yyyyMMdd_HHmmss', $null) } catch {}
+                if ($dateObj -ne $null) {
+                    if (-not $s3FileDates.ContainsKey($nameStr)) { $s3FileDates[$nameStr] = @() }
+                    $s3FileDates[$nameStr] += $dateObj
+                }
+            }
+        }
+
+        foreach ($old in $group.Group) {
+            $oldName = $old.FullName.Substring($BasePath.Length)
+            $oldDate = $old.LastWriteTime
+            Write-SyncLog "Candidate for deletion: $oldName (LastWrite: $oldDate)"
+
+            $existsRecentInS3 = $false
+            if ($s3FileDates.ContainsKey($old.Name)) {
+                foreach ($dateObj in $s3FileDates[$old.Name]) {
+                    if ($dateObj -ge $SyncAfterDate) {
+                        $existsRecentInS3 = $true
+                        break
+                    }
+                }
+            }
+
+            if ($existsRecentInS3) {
+                Remove-Item $old.FullName -Force
+                Write-SyncLog "Deleted: $oldName"
+                $deletedCount++
+            } else {
+                Write-SyncLog "SKIPPED deletion (no recent S3 copy): $oldName" -Level "WARN"
+            }
         }
     }
 }
