@@ -33,6 +33,7 @@ try {
     $AwsRegion          = "us-east-1"
     $S3Prefix           = ""
     $DeleteAfterDays    = 7
+    $SyncAfterDate      = [DateTime]"2026-03-03"             # Ignore files created before this date (remove once initial sync is done)
 
     # -----------------------------------------------------------------------------
     # FUNCTIONS
@@ -111,7 +112,8 @@ try {
     # Set of S3 keys that correspond to existing SFTP files
     $sftpKeys = @{}
 
-    $allFiles = Get-ChildItem -Path $BasePath -File -Recurse -ErrorAction SilentlyContinue
+    $allFiles = Get-ChildItem -Path $BasePath -File -Recurse -ErrorAction SilentlyContinue |
+        Where-Object { $_.CreationTime -ge $SyncAfterDate }
 
     if ($allFiles.Count -eq 0) {
         Write-SyncLog "No files found on SFTP"
