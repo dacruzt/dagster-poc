@@ -127,21 +127,26 @@ try {
     $totalErrors = 0
     $totalDeleted = 0
 
-    # Set of S3 keys that correspond to existing SFTP files
+    # Build full set of S3 keys for ALL SFTP files (no date filter)
+    # This prevents the delete step from removing files that exist on SFTP but are older than SyncAfterDate
     $sftpKeys = @{}
+    $allSftpFiles = Get-ChildItem -Path $BasePath -File -Recurse -ErrorAction SilentlyContinue
+    foreach ($f in $allSftpFiles) {
+        $sftpKeys[(Get-S3Key -FullPath $f.FullName)] = $true
+    }
+    Write-SyncLog "SFTP: $($allSftpFiles.Count) total files indexed"
 
-    $allFiles = Get-ChildItem -Path $BasePath -File -Recurse -ErrorAction SilentlyContinue |
-        Where-Object { $_.CreationTime -ge $SyncAfterDate }
+    # Only upload files created after the cutoff date
+    $allFiles = $allSftpFiles | Where-Object { $_.CreationTime -ge $SyncAfterDate }
 
     if ($allFiles.Count -eq 0) {
-        Write-SyncLog "No files found on SFTP"
+        Write-SyncLog "No new files to upload (after $SyncAfterDate)"
     } else {
-        Write-SyncLog "SFTP: $($allFiles.Count) files found"
+        Write-SyncLog "SFTP: $($allFiles.Count) files to sync (since $SyncAfterDate)"
 
         foreach ($file in $allFiles) {
             $filePath = $file.FullName
             $s3Key = Get-S3Key -FullPath $filePath
-            $sftpKeys[$s3Key] = $true
 
             # Already exists in S3 with the same size, skip
             if ($s3Objects.ContainsKey($s3Key) -and $s3Objects[$s3Key] -eq $file.Length) {
