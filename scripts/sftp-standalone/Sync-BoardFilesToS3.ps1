@@ -9,6 +9,16 @@
 # Ignores any folder named "processed".
 # =============================================================================
 
+# =============================================================================
+# LOCK FILE TO PREVENT CONCURRENT EXECUTIONS
+# =============================================================================
+$LockFile = "$PSScriptRoot\Sync-BoardFilesToS3.lock"
+if (Test-Path $LockFile) {
+    Write-Host "[ERROR] Another instance is already running. Exiting..."
+    exit 1
+}
+New-Item -ItemType File -Path $LockFile -Force | Out-Null
+
 $ErrorActionPreference = "Continue"
 
 # -----------------------------------------------------------------------------
@@ -92,6 +102,8 @@ function Get-FileStableSize {
 # -----------------------------------------------------------------------------
 # MAIN PROCESS - Recursive scan
 # -----------------------------------------------------------------------------
+
+try {
 
 Write-SyncLog "=========================================="
 Write-SyncLog "Starting recursive sync..."
@@ -230,3 +242,14 @@ Write-SyncLog "  - Files moved: $totalSuccess"
 Write-SyncLog "  - Files deleted: $deletedCount"
 Write-SyncLog "  - Files skipped: $totalSkipped"
 Write-SyncLog "  - Errors: $totalErrors"
+
+} catch {
+    Write-SyncLog "ERROR: Script failed with exception: $($_.Exception.Message)" -Level "ERROR"
+    throw $_
+} finally {
+    # Always cleanup lock file, even if errors occur
+    if (Test-Path $LockFile) {
+        Remove-Item $LockFile -Force -ErrorAction SilentlyContinue
+        Write-SyncLog "Lock file cleaned up"
+    }
+}

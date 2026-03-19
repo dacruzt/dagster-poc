@@ -46,6 +46,16 @@ function Get-S3MD5 {
 # Does NOT move files after upload, does NOT create processed folders.
 # =============================================================================
 
+# =============================================================================
+# LOCK FILE TO PREVENT CONCURRENT EXECUTIONS
+# =============================================================================
+$LockFile = "$PSScriptRoot\Sync-AllSFTPToS3.lock"
+if (Test-Path $LockFile) {
+    Write-Host "[ERROR] Another instance is already running. Exiting..."
+    exit 1
+}
+New-Item -ItemType File -Path $LockFile -Force | Out-Null
+
 $ErrorActionPreference = "Continue"
 
 # -----------------------------------------------------------------------------
@@ -100,6 +110,7 @@ function Get-FileStableSize {
 
 # -----------------------------------------------------------------------------
 # MAIN PROCESS - Recursive scan
+try {
 # -----------------------------------------------------------------------------
 
 Write-SyncLog "=========================================="
@@ -216,3 +227,14 @@ Write-SyncLog "Final summary:"
 Write-SyncLog "  - Files uploaded: $totalSuccess"
 Write-SyncLog "  - Files skipped: $totalSkipped"
 Write-SyncLog "  - Errors: $totalErrors"
+
+} catch {
+    Write-SyncLog "ERROR: Script failed with exception: $($_.Exception.Message)" -Level "ERROR"
+    throw $_
+} finally {
+    # Always cleanup lock file, even if errors occur
+    if (Test-Path $LockFile) {
+        Remove-Item $LockFile -Force -ErrorAction SilentlyContinue
+        Write-SyncLog "Lock file cleaned up"
+    }
+}

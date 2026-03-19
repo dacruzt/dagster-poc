@@ -226,9 +226,13 @@ try {
     Write-SyncLog "  - Deleted from S3: $totalDeleted"
     Write-SyncLog "  - Errors: $totalErrors"
     Write-SyncLog "=========================================="
-
-    Remove-Item $LockFile -Force
 } catch {
-    Remove-Item $LockFile -Force
+    Write-SyncLog "ERROR: Script failed with exception: $($_.Exception.Message)" -Level "ERROR"
     throw $_
+} finally {
+    # Always cleanup lock file, even if errors occur
+    if (Test-Path $LockFile) {
+        Remove-Item $LockFile -Force -ErrorAction SilentlyContinue
+        Write-SyncLog "Lock file cleaned up"
+    }
 }
