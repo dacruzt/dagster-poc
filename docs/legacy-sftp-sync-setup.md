@@ -298,34 +298,38 @@ Write-SyncLog "Script finalizado"
 
 ## Paso 5: Crear la tarea programada
 
+> **Importante:** El script ahora usa estrategia mixta:
+> - **DELTA** en corridas frecuentes (cada 5 min)
+> - **FULL** cada 60 min para reconciliacion completa del mirror (incluye borrados en S3)
+>
+> Esta combinacion mantiene baja latencia sin perder consistencia del espejo.
+
 Ejecutar en PowerShell como Administrador:
 
 ```powershell
-$taskName = "BoardFiles-S3-Sync"
+$taskName  = "BoardFiles-S3-Sync"
+$scriptPath = "C:\CEB_FTP_Data\Scripts\Sync-BoardFilesToS3.ps1"
+$workDir    = "C:\CEB_FTP_Data\Scripts"
 
-# Eliminar tarea existente si hay una
-$existing = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
-if ($existing) {
-    Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
-    Write-Output "Tarea anterior eliminada"
-}
+Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue
 
-# Crear nueva tarea
-$action = New-ScheduledTaskAction -Execute "powershell.exe" `
-    -Argument "-NoProfile -ExecutionPolicy Bypass -File C:\CEB_FTP_Data\Scripts\Sync-BoardFilesToS3.ps1"
+$action = New-ScheduledTaskAction `
+    -Execute "powershell.exe" `
+    -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`"" `
+    -WorkingDirectory $workDir
 
-$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) `
+$trigger = New-ScheduledTaskTrigger `
+    -Once -At (Get-Date).AddMinutes(1) `
     -RepetitionInterval (New-TimeSpan -Minutes 5) `
-    -RepetitionDuration (New-TimeSpan -Days 9999)
-
-$principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" `
-    -LogonType ServiceAccount -RunLevel Highest
+    -RepetitionDuration (New-TimeSpan -Days 3650)
 
 $settings = New-ScheduledTaskSettingsSet `
-    -AllowStartIfOnBatteries `
-    -DontStopIfGoingOnBatteries `
-    -StartWhenAvailable `
-    -RunOnlyIfNetworkAvailable
+    -MultipleInstances IgnoreNew `
+    -ExecutionTimeLimit (New-TimeSpan -Minutes 14) `
+    -StartWhenAvailable
+
+$principal = New-ScheduledTaskPrincipal `
+    -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
 
 Register-ScheduledTask `
     -TaskName $taskName `
@@ -333,11 +337,33 @@ Register-ScheduledTask `
     -Trigger $trigger `
     -Principal $principal `
     -Settings $settings `
-    -Description "Sincroniza archivos de SFTP a S3 cada 5 minutos" `
-    -Force
+    -Description "Sincroniza archivos de SFTP a S3 cada 5 minutos"
 
 Write-Output "Tarea '$taskName' creada exitosamente"
 ```
+
+**Parámetros clave:**
+
+| Parámetro | Valor | Razón |
+|-----------|-------|-------|
+| `RepetitionInterval` | 5 min | Corridas DELTA frecuentes para capturar cambios rapido |
+| `MultipleInstances IgnoreNew` | IgnoreNew | Si la ejecución anterior sigue corriendo, la nueva se ignora |
+| `ExecutionTimeLimit` | 14 min | Failsafe para evitar procesos colgados |
+
+### Modo de sincronizacion (FULL + DELTA)
+
+- **DELTA**: escanea solo archivos cambiados recientemente para reducir tiempo de ejecucion.
+- **FULL**: corre cada 60 minutos para validar mirror completo y reconciliar eliminaciones en S3.
+- Estado guardado en `C:\CEB_FTP_Data\Logs\.sync_state.json`.
+
+### Metricas de duracion en log
+
+Cada corrida registra estas lineas:
+
+- `S3 index duration: mm:ss.mmm`
+- `Scan/upload duration: mm:ss.mmm`
+- `Delete/reconcile duration: mm:ss.mmm`
+- `Duration: mm:ss.mmm`
 
 ### Registrar Event Source (opcional, para Windows Event Log)
 
@@ -445,6 +471,20 @@ El script escanea **todas** las carpetas bajo `C:\CEB_FTP_Data\SFTP\` recursivam
 | Archivos no se mueven a processed/ | Verificar permisos de escritura del usuario SYSTEM en la carpeta |
 | Script no se ejecuta automaticamente | Verificar tarea programada: `Get-ScheduledTask -TaskName "BoardFiles-S3-Sync"` |
 | Error `file is locked` | El archivo esta siendo escrito por otro proceso. El script lo reintentara en la siguiente ejecucion (5 min) |
+| `Another instance is already running (PID: XXXX)` | Una instancia real esta corriendo. Esperar que termine o matar el proceso: `Stop-Process -Id XXXX -Force` |
+| `Orphan lock file detected` | El proceso anterior termino sin limpiar el lock (crash). El script lo detecta y continua automaticamente |
+| Lock file no se limpia | Verificar que el lock esta en `C:\CEB_FTP_Data\Logs\Sync-BoardFilesToS3.lock`. Eliminarlo manualmente si es necesario: `Remove-Item C:\CEB_FTP_Data\Logs\Sync-BoardFilesToS3.lock -Force` |
+
+### Verificar estado del lock
+
+```powershell
+# Ver si hay lock activo y qué proceso lo tiene
+if (Test-Path "C:\CEB_FTP_Data\Logs\Sync-BoardFilesToS3.lock") {
+    Get-Content "C:\CEB_FTP_Data\Logs\Sync-BoardFilesToS3.lock"
+} else {
+    Write-Host "Sin lock activo"
+}
+```
 
 ---
 

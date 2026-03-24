@@ -151,35 +151,47 @@ Get-S3Object -BucketName "TU-BUCKET-NAME" -KeyPrefix "inbound/cebroker"
 
 ## Paso 9: Crear la Tarea Programada
 
+> **Importante:** El script usa estrategia mixta:
+> - **DELTA** cada 5 minutos
+> - **FULL** cada 60 minutos
+>
+> Asi se mantiene reaccion rapida a nuevos archivos y reconciliacion completa del mirror periodicamente.
+
 ```powershell
-# Crear la acción (ejecutar PowerShell con el script)
-$action = New-ScheduledTaskAction -Execute "PowerShell.exe" `
-    -Argument "-NoProfile -ExecutionPolicy Bypass -File C:\SFTP\Scripts\Sync-BoardFilesToS3.ps1"
+$taskName   = "BoardFiles-S3-Sync"
+$scriptPath = "C:\CEB_FTP_Data\Scripts\Sync-BoardFilesToS3.ps1"
+$workDir    = "C:\CEB_FTP_Data\Scripts"
 
-# Crear el trigger (cada 5 minutos, indefinidamente)
-$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) `
+Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue
+
+$action = New-ScheduledTaskAction `
+    -Execute "powershell.exe" `
+    -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`"" `
+    -WorkingDirectory $workDir
+
+$trigger = New-ScheduledTaskTrigger `
+    -Once -At (Get-Date).AddMinutes(1) `
     -RepetitionInterval (New-TimeSpan -Minutes 5) `
-    -RepetitionDuration ([TimeSpan]::MaxValue)
+    -RepetitionDuration (New-TimeSpan -Days 3650)
 
-# Configuración de la tarea
 $settings = New-ScheduledTaskSettingsSet `
-    -StartWhenAvailable `
-    -DontStopOnIdleEnd `
-    -AllowStartIfOnBatteries `
-    -DontStopIfGoingOnBatteries
+    -MultipleInstances IgnoreNew `
+    -ExecutionTimeLimit (New-TimeSpan -Minutes 14) `
+    -StartWhenAvailable
 
-# Registrar la tarea (ejecutar como SYSTEM)
+$principal = New-ScheduledTaskPrincipal `
+    -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
+
 Register-ScheduledTask `
-    -TaskName "SyncBoardFilesToS3" `
+    -TaskName $taskName `
     -Action $action `
     -Trigger $trigger `
+    -Principal $principal `
     -Settings $settings `
-    -User "SYSTEM" `
-    -RunLevel Highest `
-    -Force
+    -Description "Sincroniza archivos de SFTP a S3 cada 5 minutos"
 
 # Verificar que se creó
-Get-ScheduledTask -TaskName "SyncBoardFilesToS3"
+Get-ScheduledTask -TaskName $taskName
 ```
 
 ---
@@ -272,4 +284,8 @@ C:\SFTP\
 
 5. **Logs**: Revisa `C:\SFTP\Logs\sync.log` para diagnóstico de problemas.
 
-6. **Frecuencia**: La tarea se ejecuta cada 5 minutos. Puedes modificar el intervalo en la tarea programada.
+6. **Frecuencia**: La tarea se ejecuta cada 5 minutos en modo DELTA. El script hace una corrida FULL periodica (cada 60 minutos) para mantener el mirror completo.
+
+7. **Control de concurrencia**: El script usa un lock file en `C:\CEB_FTP_Data\Logs\*.lock` que guarda el PID del proceso activo. Si una nueva instancia arranca mientras la anterior corre, detecta el PID activo y sale sin hacer nada. Si el proceso anterior se cayó sin limpiar el lock, lo detecta como huérfano y lo elimina automáticamente.
+
+8. **Estado y tiempos**: El script guarda estado en `C:\CEB_FTP_Data\Logs\.sync_state.json` y registra tiempos por fase en `sync.log` (`S3 index duration`, `Scan/upload duration`, `Delete/reconcile duration`, `Duration`).

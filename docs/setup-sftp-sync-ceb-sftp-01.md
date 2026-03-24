@@ -326,32 +326,46 @@ Write-SyncLog "Script finalizado"
 
 ## Paso 6: Crear tarea programada (cada 5 minutos)
 
+> **Importante:** El script usa modo mixto:
+> - **DELTA** en corridas frecuentes (cada 5 min)
+> - **FULL** cada 60 min para reconciliacion completa del mirror
+>
+> Esto permite mantener la tarea cada 5 minutos sin sobrecargar cada ejecucion.
+
 En PowerShell como Administrador:
 
 ```powershell
-$action = New-ScheduledTaskAction -Execute "powershell.exe" `
-    -Argument "-NoProfile -ExecutionPolicy Bypass -File C:\CEB_FTP_Data\Scripts\Sync-BoardFilesToS3.ps1"
+$taskName   = "BoardFiles-S3-Sync"
+$scriptPath = "C:\CEB_FTP_Data\Scripts\Sync-BoardFilesToS3.ps1"
+$workDir    = "C:\CEB_FTP_Data\Scripts"
 
-$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) `
+Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue
+
+$action = New-ScheduledTaskAction `
+    -Execute "powershell.exe" `
+    -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`"" `
+    -WorkingDirectory $workDir
+
+$trigger = New-ScheduledTaskTrigger `
+    -Once -At (Get-Date).AddMinutes(1) `
     -RepetitionInterval (New-TimeSpan -Minutes 5) `
-    -RepetitionDuration (New-TimeSpan -Days 9999)
-
-$principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
+    -RepetitionDuration (New-TimeSpan -Days 3650)
 
 $settings = New-ScheduledTaskSettingsSet `
-    -AllowStartIfOnBatteries `
-    -DontStopIfGoingOnBatteries `
-    -StartWhenAvailable `
-    -RunOnlyIfNetworkAvailable
+    -MultipleInstances IgnoreNew `
+    -ExecutionTimeLimit (New-TimeSpan -Minutes 14) `
+    -StartWhenAvailable
+
+$principal = New-ScheduledTaskPrincipal `
+    -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
 
 Register-ScheduledTask `
-    -TaskName "BoardFiles-S3-Sync" `
+    -TaskName $taskName `
     -Action $action `
     -Trigger $trigger `
     -Principal $principal `
     -Settings $settings `
-    -Description "Sincroniza archivos de SFTP a S3 cada 5 minutos" `
-    -Force
+    -Description "Sincroniza archivos de SFTP a S3 cada 5 minutos"
 ```
 
 Resultado esperado:
@@ -420,6 +434,28 @@ Get-S3Object -BucketName "dagster-poc-sand-bucket-7a45862" -KeyPrefix "Boards/" 
 | Script no se ejecuta automaticamente | Verificar tarea: `Get-ScheduledTask -TaskName "BoardFiles-S3-Sync"` |
 | `DeleteObject Access Denied` | Normal - el role solo tiene permisos de escritura, no de borrado (por diseno) |
 | Necesita instalar como Admin | Abrir PowerShell con click derecho > Run as Administrator |
+| `Another instance is already running (PID: XXXX)` | Una instancia real esta corriendo. Esperar que termine o matar: `Stop-Process -Id XXXX -Force` |
+| `Orphan lock file detected` | El proceso anterior termino inesperadamente. El script lo detecta y continua automaticamente |
+| Lock file permanece despues de ejecucion | Eliminar manualmente: `Remove-Item C:\CEB_FTP_Data\Logs\Sync-BoardFilesToS3.lock -Force` |
+
+### Validar modo DELTA/FULL y tiempos
+
+En el log (`C:\CEB_FTP_Data\Logs\sync.log`) deberias ver:
+
+- `SFTP DELTA scan mode since UTC ...` en corridas normales
+- `SFTP FULL scan mode - periodic reconcile` aproximadamente cada 60 minutos
+- `S3 index duration`, `Scan/upload duration`, `Delete/reconcile duration`, `Duration`
+
+### Verificar estado del lock
+
+```powershell
+# Ver si hay lock activo y qué proceso lo tiene
+if (Test-Path "C:\CEB_FTP_Data\Logs\Sync-BoardFilesToS3.lock") {
+    Get-Content "C:\CEB_FTP_Data\Logs\Sync-BoardFilesToS3.lock"
+} else {
+    Write-Host "Sin lock activo"
+}
+```
 
 ### Ver logs en tiempo real
 
@@ -443,6 +479,20 @@ Unregister-ScheduledTask -TaskName "BoardFiles-S3-Sync" -Confirm:$false
 
 ## Fecha de implementacion
 
-- **Fecha:** 2026-03-03
+- **Fecha inicial:** 2026-03-03
+- **Última actualización:** 2026-03-19
 - **Implementado por:** Diego Cruz
 - **Estado:** Funcionando correctamente
+
+### Cambios 2026-03-19
+
+- Lock file movido de `$PSScriptRoot\*.lock` a `C:\CEB_FTP_Data\Logs\*.lock` (ruta hardcodeada para compatibilidad con Task Scheduler)
+- Lock ahora guarda PID y fecha de inicio en lugar de ser un archivo vacío
+- Validación de lock verifica si el PID sigue activo antes de bloquear
+- Locks huérfanos (proceso ya no existe) se limpian automáticamente
+- Configuración `MultipleInstances IgnoreNew` agregada para prevenir solapamiento
+- `ExecutionTimeLimit` de 14 minutos agregado como failsafe
+- Modo mixto FULL+DELTA implementado para mantener baja latencia y mirror completo
+- Archivo de estado `C:\CEB_FTP_Data\Logs\.sync_state.json` para recordar ventanas de escaneo
+- Correccion de parse UTC del estado para evitar FULL en cada corrida
+- Métricas de duración agregadas al log por fase y total

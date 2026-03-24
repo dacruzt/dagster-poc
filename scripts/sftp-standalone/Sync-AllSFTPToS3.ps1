@@ -49,12 +49,37 @@ function Get-S3MD5 {
 # =============================================================================
 # LOCK FILE TO PREVENT CONCURRENT EXECUTIONS
 # =============================================================================
-$LockFile = "$PSScriptRoot\Sync-AllSFTPToS3.lock"
+$LockFile = "C:\CEB_FTP_Data\Logs\Sync-AllSFTPToS3.lock"
+$LockMaxAgeMinutes = 120  # Consider lock stale after 2 hours
 if (Test-Path $LockFile) {
-    Write-Host "[ERROR] Another instance is already running. Exiting..."
-    exit 1
+    $lockAge = (Get-Date) - (Get-Item $LockFile).LastWriteTime
+    $existingPid = $null
+    $lockInfo = Get-Content -Path $LockFile -Raw -ErrorAction SilentlyContinue
+    if ($lockInfo -match 'PID=(\d+)') {
+        $existingPid = [int]$Matches[1]
+    }
+
+    $isRunning = $false
+    if ($null -ne $existingPid) {
+        $existingProc = Get-Process -Id $existingPid -ErrorAction SilentlyContinue
+        if ($existingProc -and ($existingProc.ProcessName -match 'powershell|pwsh')) {
+            $isRunning = $true
+        }
+    }
+
+    if ($isRunning) {
+        Write-Host "[ERROR] Another instance is already running (PID: $existingPid, lock age: $([math]::Round($lockAge.TotalMinutes, 1)) min). Exiting..."
+        exit 1
+    }
+
+    if ($lockAge.TotalMinutes -lt $LockMaxAgeMinutes) {
+        Write-Host "[WARN] Orphan lock file detected (PID not running, age: $([math]::Round($lockAge.TotalMinutes, 1)) min). Removing and continuing..."
+    } else {
+        Write-Host "[WARN] Stale lock file detected (age: $([math]::Round($lockAge.TotalMinutes, 1)) min). Removing and continuing..."
+    }
+    Remove-Item $LockFile -Force
 }
-New-Item -ItemType File -Path $LockFile -Force | Out-Null
+Set-Content -Path $LockFile -Value "PID=$PID`nStarted=$((Get-Date).ToString('yyyy-MM-dd HH:mm:ss'))" -Force
 
 $ErrorActionPreference = "Continue"
 
