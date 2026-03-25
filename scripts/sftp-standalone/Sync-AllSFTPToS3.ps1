@@ -1,6 +1,7 @@
 param(
     [switch]$BackfillMetadataForExisting,
-    [switch]$AuditOnly   # Scan and report what needs to be synced, WITHOUT uploading anything
+    [switch]$AuditOnly,   # Scan and report what needs to be synced, WITHOUT uploading anything
+    [switch]$DryRunDelete # Validate orphan deletes without actually removing from S3
 )
 
 function Initialize-ReportFile {
@@ -132,6 +133,35 @@ if (Test-Path $LockFile) {
     Remove-Item $LockFile -Force
 }
 Set-Content -Path $LockFile -Value "PID=$PID`nStarted=$((Get-Date).ToString('yyyy-MM-dd HH:mm:ss'))" -Force
+
+# Shared lock across sync scripts to prevent concurrent execution of Board + All scripts.
+$GlobalLockFile = "C:\CEB_FTP_Data\Logs\Sync-S3-Mirror.global.lock"
+$GlobalLockMaxAgeMinutes = 180
+if (Test-Path $GlobalLockFile) {
+    $globalLockAge = (Get-Date) - (Get-Item $GlobalLockFile).LastWriteTime
+    $existingGlobalPid = $null
+    $globalLockInfo = Get-Content -Path $GlobalLockFile -Raw -ErrorAction SilentlyContinue
+    if ($globalLockInfo -match 'PID=(\d+)') {
+        $existingGlobalPid = [int]$Matches[1]
+    }
+
+    $isGlobalRunning = $false
+    if ($null -ne $existingGlobalPid -and $globalLockAge.TotalMinutes -lt $GlobalLockMaxAgeMinutes) {
+        $globalProc = Get-Process -Id $existingGlobalPid -ErrorAction SilentlyContinue
+        if ($globalProc -and ($globalProc.ProcessName -match 'powershell|pwsh')) {
+            $isGlobalRunning = $true
+        }
+    }
+
+    if ($isGlobalRunning) {
+        Write-Host "[ERROR] Another sync script is already running (global lock PID: $existingGlobalPid, age: $([math]::Round($globalLockAge.TotalMinutes, 1)) min). Exiting..."
+        exit 1
+    }
+
+    Write-Host "[WARN] Removing stale global lock file and continuing..."
+    Remove-Item $GlobalLockFile -Force -ErrorAction SilentlyContinue
+}
+Set-Content -Path $GlobalLockFile -Value "PID=$PID`nScript=Sync-AllSFTPToS3`nStarted=$((Get-Date).ToString('yyyy-MM-dd HH:mm:ss'))" -Force
 
 $ErrorActionPreference = "Continue"
 
@@ -270,6 +300,7 @@ $totalSuccess = 0
 $totalErrors = 0
 $totalSkipped = 0
 $totalDeleted = 0
+$totalWouldDelete = 0
 $auditSynced   = 0
 $auditMissing  = 0
 $auditChanged  = 0
@@ -496,6 +527,14 @@ if ($AuditOnly) {
 
             if ($ageDays -ge $DeleteOrphanAfterDays) {
                 try {
+                    if ($DryRunDelete) {
+                        Write-SyncLog "DRY-RUN delete candidate (absent $([math]::Round($ageDays,1)) days): $orphanKey" -Level "WARN"
+                        Write-ReportRow -Path $ReportPath -Row ",WOULD_DELETE,Dry-run orphan delete after $([math]::Round($ageDays,1)) days: $orphanKey"
+                        $updatedOrphanState[$orphanKey] = $orphanState[$orphanKey]
+                        $totalWouldDelete++
+                        continue
+                    }
+
                     Remove-S3Object -BucketName $BucketName -Key $orphanKey -Region $AwsRegion -Force -ErrorAction Stop
                     Write-SyncLog "DELETED orphan from S3 (absent $([math]::Round($ageDays,1)) days): $orphanKey"
                     Write-ReportRow -Path $ReportPath -Row ",DELETED,Orphan removed after $([math]::Round($ageDays,1)) days: $orphanKey"
@@ -536,6 +575,9 @@ if ($AuditOnly) {
     Write-SyncLog "  - Errors:              $totalErrors"
     Write-SyncLog "  - Skipped:             $totalSkipped"
     Write-SyncLog "  - Deleted (orphans):   $totalDeleted"
+    if ($DryRunDelete) {
+        Write-SyncLog "  - Dry-run delete candidates: $totalWouldDelete"
+    }
 }
 Write-SyncLog "=========================================="
 
@@ -543,7 +585,10 @@ Write-SyncLog "=========================================="
     Write-SyncLog "ERROR: Script failed with exception: $($_.Exception.Message)" -Level "ERROR"
     throw $_
 } finally {
-    # Always cleanup lock file, even if errors occur
+    # Always cleanup lock files, even if errors occur
+    if (Test-Path $GlobalLockFile) {
+        Remove-Item $GlobalLockFile -Force -ErrorAction SilentlyContinue
+    }
     if (Test-Path $LockFile) {
         Remove-Item $LockFile -Force -ErrorAction SilentlyContinue
         Write-SyncLog "Lock file cleaned up"
