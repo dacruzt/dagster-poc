@@ -30,11 +30,11 @@ try {
     $LogPath            = "C:\CEB_FTP_Data\Logs\sync.log"
     $PendingDeletesFile = "C:\CEB_FTP_Data\Logs\.pending_deletes"
     $StateFile          = "C:\CEB_FTP_Data\Logs\.sync_state.json"
-    $BucketName         = "CHANGE-BUCKET-NAME"               # <-- CHANGE to target bucket
+    $BucketName         = "cebroker-sftp-raw-test-backup"
     $AwsRegion          = "us-east-1"
-    $S3Prefix           = ""                                  # S3 prefix (leave empty for root)
-    $DeleteAfterDays    = 7                                   # Grace period (days) before deleting from S3
-    $SyncAfterDate      = [DateTime]"2026-02-19"               # Ignore files created before this date (remove once initial sync is done)
+    $S3Prefix           = ""
+    $DeleteAfterDays    = 7
+    $SyncAfterDate      = [DateTime]"2026-03-03"             # Ignore files created before this date (remove once initial sync is done)
     $DeltaLookbackMinutes = 20                                # Safety overlap for delta scans
     $FullReconcileIntervalMinutes = 60                        # Run full mirror reconcile every 60 minutes
 
@@ -230,8 +230,8 @@ try {
         }
     }
 
-    # Only upload files created after the cutoff date
-    $allFiles = $allSftpFiles | Where-Object { $_.CreationTime -ge $SyncAfterDate }
+    # Only upload files created or modified after the cutoff date
+    $allFiles = $allSftpFiles | Where-Object { $_.LastWriteTime -ge $SyncAfterDate -or $_.CreationTime -ge $SyncAfterDate }
 
     if ($allFiles.Count -eq 0) {
         Write-SyncLog "No new files to upload (after $SyncAfterDate)"
