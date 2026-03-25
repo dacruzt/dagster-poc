@@ -113,8 +113,11 @@ if (Test-Path $LockFile) {
     }
 
     $isRunning = $false
+    if ($null -ne $existingPid -and $existingPid -eq $PID) {
+        Write-Host "[WARN] Local lock belongs to current PowerShell session (PID: $existingPid). Treating as stale and continuing..."
+    }
     if ($null -ne $existingPid -and $lockAge.TotalMinutes -lt $LockMaxAgeMinutes) {
-        $existingProc = Get-Process -Id $existingPid -ErrorAction SilentlyContinue
+        $existingProc = if ($existingPid -eq $PID) { $null } else { Get-Process -Id $existingPid -ErrorAction SilentlyContinue }
         if ($existingProc -and ($existingProc.ProcessName -match 'powershell|pwsh')) {
             $isRunning = $true
         }
@@ -146,8 +149,11 @@ if (Test-Path $GlobalLockFile) {
     }
 
     $isGlobalRunning = $false
+    if ($null -ne $existingGlobalPid -and $existingGlobalPid -eq $PID) {
+        Write-Host "[WARN] Global lock belongs to current PowerShell session (PID: $existingGlobalPid). Treating as stale and continuing..."
+    }
     if ($null -ne $existingGlobalPid -and $globalLockAge.TotalMinutes -lt $GlobalLockMaxAgeMinutes) {
-        $globalProc = Get-Process -Id $existingGlobalPid -ErrorAction SilentlyContinue
+        $globalProc = if ($existingGlobalPid -eq $PID) { $null } else { Get-Process -Id $existingGlobalPid -ErrorAction SilentlyContinue }
         if ($globalProc -and ($globalProc.ProcessName -match 'powershell|pwsh')) {
             $isGlobalRunning = $true
         }
@@ -284,7 +290,7 @@ try {
 
 Write-SyncLog "=========================================="
 if ($AuditOnly) {
-    Write-SyncLog "Mode: AUDIT ONLY — no files will be uploaded"
+    Write-SyncLog "Mode: AUDIT ONLY - no files will be uploaded"
     Write-SyncLog "Audit report: $AuditReportPath"
 } else {
     Write-SyncLog "Starting full recursive sync (including processed/)..."
@@ -306,7 +312,7 @@ $auditMissing  = 0
 $auditChanged  = 0
 $auditOrphaned = 0
 
-# Tracks all local keys seen — used for mirror delete and audit orphan detection
+# Tracks all local keys seen - used for mirror delete and audit orphan detection
 $localKeys = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 
 # Build S3 index once for fast lookups (avoids per-file Get-S3Object calls)
@@ -323,7 +329,14 @@ try {
 }
 
 # Find ALL files recursively in all subfolders, including processed folders
-$allFiles = Get-ChildItem -Path $BasePath -File -Recurse -ErrorAction SilentlyContinue
+Write-SyncLog "Scanning SFTP tree under $BasePath ..."
+try {
+    $allFiles = @(Get-ChildItem -Path $BasePath -File -Recurse -ErrorAction Stop)
+    Write-SyncLog "SFTP files discovered: $($allFiles.Count)"
+} catch {
+    Write-SyncLog "ERROR scanning SFTP tree '$BasePath': $($_.Exception.Message)" -Level "ERROR"
+    throw
+}
 
 if ($allFiles.Count -eq 0) {
     Write-SyncLog "No files found to sync"
@@ -360,15 +373,15 @@ if ($allFiles.Count -eq 0) {
             if (-not $existsInS3) {
                 $auditRow = "MISSING,$filePath,$s3Key,$([math]::Round($file.Length/1KB,1)),,Not in S3"
                 Write-ReportRow -Path $AuditReportPath -Row $auditRow
-                Write-SyncLog "[$relativePath] MISSING — not in S3 ($([math]::Round($file.Length/1KB,1)) KB)"
+                Write-SyncLog "[$relativePath] MISSING - not in S3 ($([math]::Round($file.Length/1KB,1)) KB)"
                 $auditMissing++
             } elseif ($existingS3Size -ne $file.Length) {
                 $auditRow = "SIZE_MISMATCH,$filePath,$s3Key,$([math]::Round($file.Length/1KB,1)),$([math]::Round($existingS3Size/1KB,1)),Local vs S3 size differ"
                 Write-ReportRow -Path $AuditReportPath -Row $auditRow
-                Write-SyncLog "[$relativePath] SIZE_MISMATCH — local $($file.Length) B vs S3 $existingS3Size B"
+                Write-SyncLog "[$relativePath] SIZE_MISMATCH - local $($file.Length) B vs S3 $existingS3Size B"
                 $auditChanged++
             } else {
-                # Same size — check metadata
+                # Same size - check metadata
                 $metadataMatches = $false
                 try {
                     $s3Head = Get-S3ObjectMetadata -BucketName $BucketName -Key $s3Key -Region $AwsRegion -ErrorAction Stop
@@ -378,18 +391,18 @@ if ($allFiles.Count -eq 0) {
                         $metadataMatches = $true
                     }
                 } catch {
-                    Write-SyncLog "[$relativePath] WARN: Could not read S3 metadata — $($_.Exception.Message)" -Level "WARN"
+                    Write-SyncLog "[$relativePath] WARN: Could not read S3 metadata - $($_.Exception.Message)" -Level "WARN"
                 }
 
                 if ($metadataMatches) {
                     $auditRow = "SYNCED,$filePath,$s3Key,$([math]::Round($file.Length/1KB,1)),$([math]::Round($existingS3Size/1KB,1)),Up to date"
                     Write-ReportRow -Path $AuditReportPath -Row $auditRow
-                    Write-SyncLog "[$relativePath] SYNCED — up to date"
+                    Write-SyncLog "[$relativePath] SYNCED - up to date"
                     $auditSynced++
                 } else {
                     $auditRow = "METADATA_DRIFT,$filePath,$s3Key,$([math]::Round($file.Length/1KB,1)),$([math]::Round($existingS3Size/1KB,1)),Same size but metadata differs"
                     Write-ReportRow -Path $AuditReportPath -Row $auditRow
-                    Write-SyncLog "[$relativePath] METADATA_DRIFT — same size but metadata differs"
+                    Write-SyncLog "[$relativePath] METADATA_DRIFT - same size but metadata differs"
                     $auditChanged++
                 }
             }
@@ -397,7 +410,7 @@ if ($allFiles.Count -eq 0) {
         }
 
         if ($existsInS3 -and -not $BackfillMetadataForExisting) {
-            # Size matches — compare metadata to decide whether to skip
+            # Size matches - compare metadata to decide whether to skip
             if ($existingS3Size -eq $file.Length) {
                 $metadataMatches = $false
                 try {
@@ -417,9 +430,9 @@ if ($allFiles.Count -eq 0) {
                     $totalSkipped++
                     continue
                 }
-                # Size matches but metadata differs — re-upload
+                # Size matches but metadata differs - re-upload
             } else {
-                # Different size — re-upload
+                # Different size - re-upload
                 Write-SyncLog "[$relativePath] Size changed (local: $($file.Length), S3: $existingS3Size), re-uploading"
             }
         }
@@ -503,7 +516,7 @@ if ($AuditOnly) {
         if (-not $localKeys.Contains($orphanKey)) {
             $auditRow = "ORPHAN,,$orphanKey,,,$([math]::Round($s3Objects[$orphanKey]/1KB,1)),In S3 but not on SFTP"
             Write-ReportRow -Path $AuditReportPath -Row $auditRow
-            Write-SyncLog "[$orphanKey] ORPHAN — exists in S3 but not on SFTP"
+            Write-SyncLog "[$orphanKey] ORPHAN - exists in S3 but not on SFTP"
             $auditOrphaned++
         }
     }
@@ -517,7 +530,7 @@ if ($AuditOnly) {
         if ($localKeys.Contains($orphanKey)) { continue }  # Still exists on SFTP, not an orphan
 
         if ($orphanState.ContainsKey($orphanKey)) {
-            # Already tracked — check if grace period has elapsed
+            # Already tracked - check if grace period has elapsed
             try {
                 $firstSeen = ([DateTimeOffset]::Parse([string]$orphanState[$orphanKey])).UtcDateTime
             } catch {
@@ -539,7 +552,7 @@ if ($AuditOnly) {
                     Write-SyncLog "DELETED orphan from S3 (absent $([math]::Round($ageDays,1)) days): $orphanKey"
                     Write-ReportRow -Path $ReportPath -Row ",DELETED,Orphan removed after $([math]::Round($ageDays,1)) days: $orphanKey"
                     $totalDeleted++
-                    # Don't carry forward to updatedOrphanState — it's gone
+                    # Don't carry forward to updatedOrphanState - it's gone
                 } catch {
                     Write-SyncLog "ERROR deleting S3 orphan '$orphanKey': $($_.Exception.Message)" -Level "ERROR"
                     $totalErrors++
@@ -550,8 +563,8 @@ if ($AuditOnly) {
                 $updatedOrphanState[$orphanKey] = $orphanState[$orphanKey]  # Keep tracking
             }
         } else {
-            # First time we see this key as orphan — start the grace period clock
-            Write-SyncLog "[$orphanKey] New orphan detected — grace period started (will delete after $DeleteOrphanAfterDays days)"
+            # First time we see this key as orphan - start the grace period clock
+            Write-SyncLog "[$orphanKey] New orphan detected - grace period started (will delete after $DeleteOrphanAfterDays days)"
             $updatedOrphanState[$orphanKey] = $nowUtc.ToString("o")
         }
     }

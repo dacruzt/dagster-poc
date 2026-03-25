@@ -27,8 +27,11 @@ if (Test-Path $LockFile) {
     }
 
     $isRunning = $false
+    if ($null -ne $existingPid -and $existingPid -eq $PID) {
+        Write-Host "[WARN] Local lock belongs to current PowerShell session (PID: $existingPid). Treating as stale and continuing..."
+    }
     if ($null -ne $existingPid -and $lockAge.TotalMinutes -lt $LockMaxAgeMinutes) {
-        $existingProc = Get-Process -Id $existingPid -ErrorAction SilentlyContinue
+        $existingProc = if ($existingPid -eq $PID) { $null } else { Get-Process -Id $existingPid -ErrorAction SilentlyContinue }
         if ($existingProc -and ($existingProc.ProcessName -match 'powershell|pwsh')) {
             $isRunning = $true
         }
@@ -60,8 +63,11 @@ if (Test-Path $GlobalLockFile) {
     }
 
     $isGlobalRunning = $false
+    if ($null -ne $existingGlobalPid -and $existingGlobalPid -eq $PID) {
+        Write-Host "[WARN] Global lock belongs to current PowerShell session (PID: $existingGlobalPid). Treating as stale and continuing..."
+    }
     if ($null -ne $existingGlobalPid -and $globalLockAge.TotalMinutes -lt $GlobalLockMaxAgeMinutes) {
-        $globalProc = Get-Process -Id $existingGlobalPid -ErrorAction SilentlyContinue
+        $globalProc = if ($existingGlobalPid -eq $PID) { $null } else { Get-Process -Id $existingGlobalPid -ErrorAction SilentlyContinue }
         if ($globalProc -and ($globalProc.ProcessName -match 'powershell|pwsh')) {
             $isGlobalRunning = $true
         }
