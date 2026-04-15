@@ -140,7 +140,16 @@ Set-Content -Path $LockFile -Value "PID=$PID`nStarted=$((Get-Date).ToString('yyy
 # Shared lock across sync scripts to prevent concurrent execution of Board + All scripts.
 $GlobalLockFile = "C:\CEB_FTP_Data\Logs\Sync-S3-Mirror.global.lock"
 $GlobalLockMaxAgeMinutes = 180
-if (Test-Path $GlobalLockFile) {
+$GlobalLockRetryAttempts = 15       # Max retries before giving up
+$GlobalLockRetryIntervalSeconds = 120  # Wait 2 minutes between retries (total max wait: 30 min)
+$globalLockAcquired = $false
+
+for ($attempt = 1; $attempt -le ($GlobalLockRetryAttempts + 1); $attempt++) {
+    if (-not (Test-Path $GlobalLockFile)) {
+        $globalLockAcquired = $true
+        break
+    }
+
     $globalLockAge = (Get-Date) - (Get-Item $GlobalLockFile).LastWriteTime
     $existingGlobalPid = $null
     $globalLockInfo = Get-Content -Path $GlobalLockFile -Raw -ErrorAction SilentlyContinue
@@ -148,24 +157,40 @@ if (Test-Path $GlobalLockFile) {
         $existingGlobalPid = [int]$Matches[1]
     }
 
-    $isGlobalRunning = $false
+    # If lock belongs to current session, treat as stale
     if ($null -ne $existingGlobalPid -and $existingGlobalPid -eq $PID) {
         Write-Host "[WARN] Global lock belongs to current PowerShell session (PID: $existingGlobalPid). Treating as stale and continuing..."
+        Remove-Item $GlobalLockFile -Force -ErrorAction SilentlyContinue
+        $globalLockAcquired = $true
+        break
     }
+
+    # Check if lock holder is still running
+    $isGlobalRunning = $false
     if ($null -ne $existingGlobalPid -and $globalLockAge.TotalMinutes -lt $GlobalLockMaxAgeMinutes) {
-        $globalProc = if ($existingGlobalPid -eq $PID) { $null } else { Get-Process -Id $existingGlobalPid -ErrorAction SilentlyContinue }
+        $globalProc = Get-Process -Id $existingGlobalPid -ErrorAction SilentlyContinue
         if ($globalProc -and ($globalProc.ProcessName -match 'powershell|pwsh')) {
             $isGlobalRunning = $true
         }
     }
 
-    if ($isGlobalRunning) {
-        Write-Host "[ERROR] Another sync script is already running (global lock PID: $existingGlobalPid, age: $([math]::Round($globalLockAge.TotalMinutes, 1)) min). Exiting..."
-        exit 1
+    if (-not $isGlobalRunning) {
+        Write-Host "[WARN] Removing stale/orphan global lock file and continuing..."
+        Remove-Item $GlobalLockFile -Force -ErrorAction SilentlyContinue
+        $globalLockAcquired = $true
+        break
     }
 
-    Write-Host "[WARN] Removing stale global lock file and continuing..."
-    Remove-Item $GlobalLockFile -Force -ErrorAction SilentlyContinue
+    # Another script is actively running - wait and retry
+    if ($attempt -le $GlobalLockRetryAttempts) {
+        Write-Host "[INFO] Another sync script is running (global lock PID: $existingGlobalPid, age: $([math]::Round($globalLockAge.TotalMinutes, 1)) min). Waiting $GlobalLockRetryIntervalSeconds seconds... (attempt $attempt/$GlobalLockRetryAttempts)"
+        Start-Sleep -Seconds $GlobalLockRetryIntervalSeconds
+    }
+}
+
+if (-not $globalLockAcquired) {
+    Write-Host "[ERROR] Could not acquire global lock after $GlobalLockRetryAttempts retries (~$([math]::Round(($GlobalLockRetryAttempts * $GlobalLockRetryIntervalSeconds) / 60)) min). Exiting..."
+    exit 1
 }
 Set-Content -Path $GlobalLockFile -Value "PID=$PID`nScript=Sync-AllSFTPToS3`nStarted=$((Get-Date).ToString('yyyy-MM-dd HH:mm:ss'))" -Force
 
