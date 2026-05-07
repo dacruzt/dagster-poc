@@ -1,17 +1,13 @@
 # =============================================================================
-# Sync-BoardFilesToS3.ps1 - Recursive SFTP Sync Script
+# Sync-BoardFilesToS3.ps1 - Recursive SFTP Sync Script (append/update only)
 # =============================================================================
 # Recursively scans the entire structure under the base path and uploads new files
 # to S3, preserving the full path and original file name.
 # Example: providers/Provider_XYZ/subfolder/file.csv
 #       -> s3://bucket/providers/Provider_XYZ/subfolder/file.csv
-# Does NOT move or rename files in SFTP.
+# Does NOT move or rename files in SFTP, and does NOT delete from S3.
 # Includes files in any subfolder, including "processed".
 # =============================================================================
-
-param(
-    [switch]$DryRunDelete  # Validate orphan deletes without actually removing from S3
-)
 
 # =============================================================================
 # LOCK FILE TO PREVENT CONCURRENT EXECUTIONS
@@ -122,9 +118,6 @@ $SyncAfterDate = [DateTime]"2026-03-20"
 $StateFile = "C:\CEB_FTP_Data\Logs\.sync_state_boardfiles.json"
 $DeltaLookbackMinutes = 20
 $FullReconcileIntervalMinutes = 60
-$EnableMirrorDelete = $true       # Delete S3 objects that no longer exist on SFTP (only during full scans)
-$DeleteOrphanAfterDays = 7        # Grace period: only delete after orphan is absent this many days
-$OrphanStateFile = "C:\CEB_FTP_Data\Logs\.sync_orphans_boardfiles.json"  # Tracks first-seen orphan timestamps
 
 # -----------------------------------------------------------------------------
 # FUNCTIONS
@@ -248,30 +241,6 @@ function Convert-StateValueToUtc {
     }
 }
 
-function Get-OrphanState {
-    if (-not (Test-Path $OrphanStateFile)) { return @{} }
-    try {
-        $raw = Get-Content -Path $OrphanStateFile -Raw -ErrorAction Stop
-        if ([string]::IsNullOrWhiteSpace($raw)) { return @{} }
-        $obj = $raw | ConvertFrom-Json
-        $ht = @{}
-        foreach ($prop in $obj.PSObject.Properties) { $ht[$prop.Name] = $prop.Value }
-        return $ht
-    } catch {
-        Write-SyncLog "WARN reading orphan state file: $($_.Exception.Message)" -Level "WARN"
-        return @{}
-    }
-}
-
-function Save-OrphanState {
-    param([hashtable]$State)
-    try {
-        $State | ConvertTo-Json | Set-Content -Path $OrphanStateFile -Force
-    } catch {
-        Write-SyncLog "WARN saving orphan state file: $($_.Exception.Message)" -Level "WARN"
-    }
-}
-
 # -----------------------------------------------------------------------------
 # MAIN PROCESS - Recursive scan
 # -----------------------------------------------------------------------------
@@ -287,11 +256,6 @@ Write-SyncLog "=========================================="
 $totalSuccess = 0
 $totalErrors = 0
 $totalSkipped = 0
-$totalDeleted = 0
-$totalWouldDelete = 0
-
-# Tracks local keys seen during this run (used for mirror delete in full scans)
-$localKeys = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 
 # Build S3 index once for fast lookups
 $s3Objects = @{}
@@ -323,16 +287,8 @@ if ($syncState.PSObject.Properties.Name -contains "LastDeltaScanUtc" -and -not [
 $doFullScan = ($lastFullScanUtc -eq [DateTime]::MinValue) -or (($nowUtc - $lastFullScanUtc).TotalMinutes -ge $FullReconcileIntervalMinutes)
 
 if ($doFullScan) {
-    # For mirror delete correctness, full scan must know ALL local keys, not only recent files.
-    $allLocalFiles = Get-ChildItem -Path $BasePath -File -Recurse -ErrorAction SilentlyContinue
-
-    foreach ($localFile in $allLocalFiles) {
-        $localRelativePath = $localFile.FullName.Substring($BasePath.Length).TrimStart('\\') -replace '\\', '/'
-        [void]$localKeys.Add($localRelativePath)
-    }
-
-    # Upload candidates during full scan still follow SyncAfterDate.
-    $allFiles = $allLocalFiles |
+    # Full scan reconciles all files newer than SyncAfterDate (catches anything DELTA missed).
+    $allFiles = Get-ChildItem -Path $BasePath -File -Recurse -ErrorAction SilentlyContinue |
         Where-Object {
             ($_.LastWriteTime -gt $SyncAfterDate -or $_.CreationTime -gt $SyncAfterDate)
         }
@@ -364,7 +320,6 @@ if ($allFiles.Count -eq 0) {
         # Keep the exact original relative path and file name in S3
         $relativePath = $filePath.Substring($BasePath.Length).TrimStart('\\') -replace '\\', '/'
         $s3Key = $relativePath
-        [void]$localKeys.Add($s3Key)
         $sourceLastWriteUtc = $file.LastWriteTimeUtc.ToString("o")
         $sourceCreationUtc = $file.CreationTimeUtc.ToString("o")
         $metadata = @{
@@ -429,63 +384,6 @@ if ($allFiles.Count -eq 0) {
 
 if ($doFullScan) {
     Save-SyncState -LastDeltaScanUtc $nowUtc -LastFullScanUtc $nowUtc
-
-    # Mirror delete: remove S3 objects that no longer exist on SFTP (with grace period)
-    if ($EnableMirrorDelete) {
-        Write-SyncLog "Mirror mode: checking for S3 orphans (grace period: $DeleteOrphanAfterDays days)..."
-        $orphanState = Get-OrphanState
-        $updatedOrphanState = @{}
-
-        foreach ($orphanKey in $s3Objects.Keys) {
-            if ($localKeys.Contains($orphanKey)) { continue }  # Still exists on SFTP
-
-            if ($orphanState.ContainsKey($orphanKey)) {
-                try {
-                    $firstSeen = ([DateTimeOffset]::Parse([string]$orphanState[$orphanKey])).UtcDateTime
-                } catch {
-                    $firstSeen = $nowUtc
-                }
-                $ageDays = ($nowUtc - $firstSeen).TotalDays
-
-                if ($ageDays -ge $DeleteOrphanAfterDays) {
-                    try {
-                        # Final safety check before delete: verify file truly does not exist on disk.
-                        $orphanLocalPath = Join-Path $BasePath ($orphanKey -replace '/', '\\')
-                        if (Test-Path $orphanLocalPath) {
-                            Write-SyncLog "SKIP delete for '$orphanKey': key exists on disk at '$orphanLocalPath'" -Level "WARN"
-                            $updatedOrphanState[$orphanKey] = $orphanState[$orphanKey]
-                            continue
-                        }
-
-                        if ($DryRunDelete) {
-                            Write-SyncLog "DRY-RUN delete candidate (absent $([math]::Round($ageDays,1)) days): $orphanKey" -Level "WARN"
-                            $updatedOrphanState[$orphanKey] = $orphanState[$orphanKey]
-                            $totalWouldDelete++
-                            continue
-                        }
-
-                        Remove-S3Object -BucketName $BucketName -Key $orphanKey -Region $AwsRegion -Force -ErrorAction Stop
-                        Write-SyncLog "DELETED orphan from S3 (absent $([math]::Round($ageDays,1)) days): $orphanKey"
-                        $totalDeleted++
-                    } catch {
-                        Write-SyncLog "ERROR deleting S3 orphan '$orphanKey': $($_.Exception.Message)" -Level "ERROR"
-                        $totalErrors++
-                        $updatedOrphanState[$orphanKey] = $orphanState[$orphanKey]  # Keep tracking
-                    }
-                } else {
-                    Write-SyncLog "[$orphanKey] Orphan pending delete ($([math]::Round($ageDays,1))/$DeleteOrphanAfterDays days elapsed)"
-                    $updatedOrphanState[$orphanKey] = $orphanState[$orphanKey]  # Keep tracking
-                }
-            } else {
-                # First time detected as orphan — start grace period clock
-                Write-SyncLog "[$orphanKey] New orphan detected — grace period started (will delete after $DeleteOrphanAfterDays days)"
-                $updatedOrphanState[$orphanKey] = $nowUtc.ToString("o")
-            }
-        }
-
-        Save-OrphanState -State $updatedOrphanState
-        Write-SyncLog "Mirror delete complete. Deleted: $totalDeleted | Pending: $($updatedOrphanState.Count)"
-    }
 } else {
     Save-SyncState -LastDeltaScanUtc $nowUtc -LastFullScanUtc $lastFullScanUtc
 }
@@ -495,21 +393,9 @@ Write-SyncLog "Sync completed"
 Write-SyncLog "  - Successful: $totalSuccess"
 Write-SyncLog "  - Errors: $totalErrors"
 Write-SyncLog "  - Skipped: $totalSkipped"
-Write-SyncLog "  - Deleted (orphans): $totalDeleted"
-if ($DryRunDelete) {
-    Write-SyncLog "  - Dry-run delete candidates: $totalWouldDelete"
-}
 Write-SyncLog "=========================================="
 
 Write-SyncLog "Script finished"
-Write-SyncLog "Final summary:"
-Write-SyncLog "  - Files uploaded: $totalSuccess"
-Write-SyncLog "  - Files skipped: $totalSkipped"
-Write-SyncLog "  - Errors: $totalErrors"
-Write-SyncLog "  - Orphans deleted: $totalDeleted"
-if ($DryRunDelete) {
-    Write-SyncLog "  - Dry-run delete candidates: $totalWouldDelete"
-}
 
 } catch {
     Write-SyncLog "ERROR: Script failed with exception: $($_.Exception.Message)" -Level "ERROR"
