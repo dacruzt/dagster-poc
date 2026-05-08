@@ -116,6 +116,8 @@ $BucketName = "cebroker-sftp-raw-test-backup"
 $AwsRegion = "us-east-1"
 $SyncAfterDate = [DateTime]"2026-03-20"
 $StateFile = "C:\CEB_FTP_Data\Logs\.sync_state_boardfiles.json"
+$S3IndexCacheFile = "C:\CEB_FTP_Data\Logs\.s3_index_boardfiles.json"
+$S3IndexCacheTtlHours = 168  # 7 days; full scan refreshes when exceeded
 $DeltaLookbackMinutes = 20
 $FullReconcileIntervalMinutes = 60
 
@@ -241,6 +243,53 @@ function Convert-StateValueToUtc {
     }
 }
 
+function Get-S3IndexFromCache {
+    param([string]$ExpectedBucket, [int]$TtlHours)
+
+    if (-not (Test-Path $S3IndexCacheFile)) {
+        return $null
+    }
+
+    try {
+        $raw = Get-Content -Path $S3IndexCacheFile -Raw -ErrorAction Stop
+        if ([string]::IsNullOrWhiteSpace($raw)) { return $null }
+
+        $cache = $raw | ConvertFrom-Json
+        if ($cache.BucketName -ne $ExpectedBucket) { return $null }
+
+        $generatedAt = ([DateTimeOffset]::Parse([string]$cache.GeneratedAtUtc)).UtcDateTime
+        $ageHours = ((Get-Date).ToUniversalTime() - $generatedAt).TotalHours
+        if ($ageHours -gt $TtlHours) { return $null }
+
+        $ht = @{}
+        foreach ($prop in $cache.Objects.PSObject.Properties) {
+            $ht[$prop.Name] = [long]$prop.Value
+        }
+        return @{
+            Objects  = $ht
+            AgeHours = $ageHours
+        }
+    } catch {
+        Write-SyncLog "WARN reading S3 index cache: $($_.Exception.Message)" -Level "WARN"
+        return $null
+    }
+}
+
+function Save-S3IndexCache {
+    param([hashtable]$Objects, [string]$BucketName)
+
+    try {
+        $payload = [PSCustomObject]@{
+            GeneratedAtUtc = (Get-Date).ToUniversalTime().ToString("o")
+            BucketName     = $BucketName
+            Objects        = $Objects
+        }
+        $payload | ConvertTo-Json -Depth 5 -Compress | Set-Content -Path $S3IndexCacheFile -Force
+    } catch {
+        Write-SyncLog "WARN saving S3 index cache: $($_.Exception.Message)" -Level "WARN"
+    }
+}
+
 # -----------------------------------------------------------------------------
 # MAIN PROCESS - Recursive scan
 # -----------------------------------------------------------------------------
@@ -256,19 +305,6 @@ Write-SyncLog "=========================================="
 $totalSuccess = 0
 $totalErrors = 0
 $totalSkipped = 0
-
-# Build S3 index once for fast lookups
-$s3Objects = @{}
-try {
-    $s3List = Get-S3Object -BucketName $BucketName -Region $AwsRegion
-    foreach ($obj in $s3List) {
-        $s3Objects[$obj.Key] = $obj.Size
-    }
-    Write-SyncLog "S3 indexed objects: $($s3Objects.Count)"
-} catch {
-    Write-SyncLog "ERROR listing S3 objects: $($_.Exception.Message)" -Level "ERROR"
-    throw
-}
 
 # Load scan state and determine whether this run is full or delta
 $syncState = Get-SyncState
@@ -286,13 +322,46 @@ if ($syncState.PSObject.Properties.Name -contains "LastDeltaScanUtc" -and -not [
 
 $doFullScan = ($lastFullScanUtc -eq [DateTime]::MinValue) -or (($nowUtc - $lastFullScanUtc).TotalMinutes -ge $FullReconcileIntervalMinutes)
 
-if ($doFullScan) {
-    # Full scan reconciles all files newer than SyncAfterDate (catches anything DELTA missed).
-    $allFiles = Get-ChildItem -Path $BasePath -File -Recurse -ErrorAction SilentlyContinue |
-        Where-Object {
-            ($_.LastWriteTime -gt $SyncAfterDate -or $_.CreationTime -gt $SyncAfterDate)
+# Build S3 index. Try the disk cache first (key->size dict) — listing the bucket
+# can take minutes. The cache is refreshed on FULL scans when stale or missing.
+# DELTA runs use whatever is in cache, falling back to per-key HEAD if no cache.
+$s3Objects = @{}
+$s3CacheDirty = $false
+
+$cached = Get-S3IndexFromCache -ExpectedBucket $BucketName -TtlHours $S3IndexCacheTtlHours
+if ($cached) {
+    $s3Objects = $cached.Objects
+    Write-SyncLog "S3 index loaded from cache: $($s3Objects.Count) objects (age: $([math]::Round($cached.AgeHours, 1))h)"
+}
+
+$needRefresh = $doFullScan -and -not $cached
+if ($needRefresh) {
+    $listStart = Get-Date
+    try {
+        $s3List = Get-S3Object -BucketName $BucketName -Region $AwsRegion
+        $s3Objects = @{}
+        foreach ($obj in $s3List) {
+            $s3Objects[$obj.Key] = $obj.Size
         }
-    Write-SyncLog "SFTP FULL scan mode"
+        Save-S3IndexCache -Objects $s3Objects -BucketName $BucketName
+        Write-SyncLog "S3 index refreshed from bucket: $($s3Objects.Count) objects ($([math]::Round(((Get-Date) - $listStart).TotalSeconds, 1))s)"
+    } catch {
+        Write-SyncLog "ERROR listing S3 objects: $($_.Exception.Message)" -Level "ERROR"
+        throw
+    }
+}
+
+# Enumerate files via Get-ChildItem. Benchmarks on this environment show it
+# beats [IO.Directory]::EnumerateFiles + FileInfo::new because Get-ChildItem
+# returns FileInfo with metadata already populated.
+$scanStart = Get-Date
+
+if ($doFullScan) {
+    $allFiles = @(
+        Get-ChildItem -Path $BasePath -File -Recurse -ErrorAction SilentlyContinue |
+            Where-Object { $_.LastWriteTime -gt $SyncAfterDate -or $_.CreationTime -gt $SyncAfterDate }
+    )
+    Write-SyncLog "SFTP FULL scan mode (enum took $([math]::Round(((Get-Date) - $scanStart).TotalSeconds, 1))s)"
 } else {
     $deltaSinceUtc = $lastDeltaScanUtc.AddMinutes(-$DeltaLookbackMinutes)
     $syncAfterUtc = $SyncAfterDate.ToUniversalTime()
@@ -300,11 +369,11 @@ if ($doFullScan) {
         $deltaSinceUtc = $syncAfterUtc
     }
 
-    $allFiles = Get-ChildItem -Path $BasePath -File -Recurse -ErrorAction SilentlyContinue |
-        Where-Object {
-            $_.LastWriteTimeUtc -ge $deltaSinceUtc
-        }
-    Write-SyncLog "SFTP DELTA scan mode since UTC $($deltaSinceUtc.ToString('yyyy-MM-dd HH:mm:ss'))"
+    $allFiles = @(
+        Get-ChildItem -Path $BasePath -File -Recurse -ErrorAction SilentlyContinue |
+            Where-Object { $_.LastWriteTimeUtc -ge $deltaSinceUtc }
+    )
+    Write-SyncLog "SFTP DELTA scan mode since UTC $($deltaSinceUtc.ToString('yyyy-MM-dd HH:mm:ss')) (enum took $([math]::Round(((Get-Date) - $scanStart).TotalSeconds, 1))s)"
 }
 
 if ($allFiles.Count -eq 0) {
@@ -329,19 +398,39 @@ if ($allFiles.Count -eq 0) {
 
         Write-SyncLog "[$relativePath] Processing: $fileName ($([math]::Round($file.Length / 1MB, 2)) MB)"
 
-        # Skip upload when key/size/metadata already match in S3
-        if ($s3Objects.ContainsKey($s3Key) -and $s3Objects[$s3Key] -eq $file.Length) {
+        # Decide whether to do a HEAD to compare custom metadata before uploading:
+        # - If we have an index (cache or fresh listing) AND the key+size match → HEAD to verify metadata
+        # - If we have an index AND the key is missing or size differs → upload directly (no HEAD)
+        # - If we have no index (DELTA without cache) → HEAD to know if it's a new upload or a no-op
+        $shouldHead = $false
+        if ($s3Objects.Count -gt 0) {
+            if ($s3Objects.ContainsKey($s3Key) -and $s3Objects[$s3Key] -eq $file.Length) {
+                $shouldHead = $true
+            }
+        } else {
+            $shouldHead = $true
+        }
+
+        if ($shouldHead) {
             $metadataMatches = $false
+            $headExists = $true
             try {
                 $s3Head = Get-S3ObjectMetadata -BucketName $BucketName -Key $s3Key -Region $AwsRegion -ErrorAction Stop
-                $s3SourceLastWriteUtc = [string]$s3Head.Metadata["source-last-write-time-utc"]
-                $s3SourceCreationUtc = [string]$s3Head.Metadata["source-creation-time-utc"]
-
-                if ($s3SourceLastWriteUtc -eq $sourceLastWriteUtc -and $s3SourceCreationUtc -eq $sourceCreationUtc) {
-                    $metadataMatches = $true
+                if ($s3Head.ContentLength -eq $file.Length) {
+                    $s3SourceLastWriteUtc = [string]$s3Head.Metadata["source-last-write-time-utc"]
+                    $s3SourceCreationUtc = [string]$s3Head.Metadata["source-creation-time-utc"]
+                    if ($s3SourceLastWriteUtc -eq $sourceLastWriteUtc -and $s3SourceCreationUtc -eq $sourceCreationUtc) {
+                        $metadataMatches = $true
+                    }
                 }
             } catch {
-                Write-SyncLog "[$relativePath] WARN: Could not read S3 metadata for compare - $($_.Exception.Message)" -Level "WARN"
+                # 404 / NotFound = object does not exist; any other error logged
+                $msg = $_.Exception.Message
+                if ($msg -match "NotFound|NoSuchKey|does not exist|404|Not Found") {
+                    $headExists = $false
+                } else {
+                    Write-SyncLog "[$relativePath] WARN: Could not read S3 metadata for compare - $msg" -Level "WARN"
+                }
             }
 
             if ($metadataMatches) {
@@ -367,6 +456,10 @@ if ($allFiles.Count -eq 0) {
             Write-SyncLog "[$relativePath] Uploading to s3://$BucketName/$s3Key"
             Write-S3Object -BucketName $BucketName -File $filePath -Key $s3Key -Region $AwsRegion -Metadata $metadata -ErrorAction Stop
 
+            # Write-through: keep the index in sync so the next run can fast-skip this key.
+            $s3Objects[$s3Key] = $file.Length
+            $s3CacheDirty = $true
+
             Write-SyncLog "[$relativePath] OK: $fileName -> $s3Key"
             $totalSuccess++
         } catch {
@@ -386,6 +479,13 @@ if ($doFullScan) {
     Save-SyncState -LastDeltaScanUtc $nowUtc -LastFullScanUtc $nowUtc
 } else {
     Save-SyncState -LastDeltaScanUtc $nowUtc -LastFullScanUtc $lastFullScanUtc
+}
+
+# Persist S3 index cache if any uploads happened during this run (write-through).
+# Refreshes done above have already saved; this only covers incremental updates.
+if ($s3CacheDirty -and -not $needRefresh) {
+    Save-S3IndexCache -Objects $s3Objects -BucketName $BucketName
+    Write-SyncLog "S3 index cache updated with $totalSuccess new/changed entries"
 }
 
 Write-SyncLog "=========================================="
