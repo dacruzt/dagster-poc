@@ -112,6 +112,8 @@ $ErrorActionPreference = "Continue"
 
 $BasePath = "C:\CEB_FTP_Data\SFTP"
 $LogPath = "C:\CEB_FTP_Data\Logs\sync.log"
+$LogMaxSizeMB = 50
+$LogRetentionDays = 7
 $BucketName = "cebroker-sftp-raw-test-backup"
 $AwsRegion = "us-east-1"
 $SyncAfterDate = [DateTime]"2026-03-20"
@@ -120,6 +122,9 @@ $S3IndexCacheFile = "C:\CEB_FTP_Data\Logs\.s3_index_boardfiles.json"
 $S3IndexCacheTtlHours = 168  # 7 days; full scan refreshes when exceeded
 $DeltaLookbackMinutes = 20
 $FullReconcileIntervalMinutes = 60
+$AppendDateSuffixIfNoDateInName = $true
+$DateSuffixFormat = "yyyyMMdd_HHmmss"
+$VersionOnChangeAtExistingKey = $true
 
 # -----------------------------------------------------------------------------
 # FUNCTIONS
@@ -177,6 +182,45 @@ function Write-SyncLog {
     } catch {}
 }
 
+function Invoke-LogMaintenance {
+    param(
+        [string]$Path,
+        [int]$MaxSizeMB,
+        [int]$RetentionDays
+    )
+
+    try {
+        $logDir = Split-Path $Path -Parent
+        if (-not (Test-Path $logDir)) {
+            New-Item -ItemType Directory -Path $logDir -Force | Out-Null
+        }
+
+        if (Test-Path $Path) {
+            $maxBytes = $MaxSizeMB * 1MB
+            $currentSize = (Get-Item $Path).Length
+            if ($currentSize -ge $maxBytes) {
+                $logBaseName = [System.IO.Path]::GetFileNameWithoutExtension($Path)
+                $logExt = [System.IO.Path]::GetExtension($Path)
+                $archiveName = "{0}.{1}{2}" -f $logBaseName, (Get-Date -Format "yyyyMMdd_HHmmss"), $logExt
+                $archivePath = Join-Path $logDir $archiveName
+
+                Move-Item -Path $Path -Destination $archivePath -Force
+            }
+        }
+
+        $retentionCutoff = (Get-Date).AddDays(-$RetentionDays)
+        $logBaseName = [System.IO.Path]::GetFileNameWithoutExtension($Path)
+        $logExt = [System.IO.Path]::GetExtension($Path)
+        $archivePattern = "{0}.*{1}" -f $logBaseName, $logExt
+
+        Get-ChildItem -Path $logDir -File -Filter $archivePattern -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -ne ([System.IO.Path]::GetFileName($Path)) -and $_.LastWriteTime -lt $retentionCutoff } |
+            Remove-Item -Force -ErrorAction SilentlyContinue
+    } catch {
+        Write-Host "[WARN] Log maintenance failed: $($_.Exception.Message)"
+    }
+}
+
 function Test-FileNotLocked {
     param([string]$FilePath)
     try {
@@ -195,6 +239,80 @@ function Get-FileStableSize {
     Start-Sleep -Seconds $WaitSeconds
     $size2 = (Get-Item $FilePath).Length
     return $size1 -eq $size2
+}
+
+function Test-FileNameHasDate {
+    param([string]$FileName)
+
+    $nameWithoutExt = [System.IO.Path]::GetFileNameWithoutExtension($FileName)
+    $datePatterns = @(
+        '20\d{2}[01]\d[0-3]\d',          # yyyyMMdd
+        '20\d{2}[-_][01]\d[-_][0-3]\d',  # yyyy-MM-dd / yyyy_MM_dd
+        '[0-3]\d[-_][01]\d[-_]20\d{2}',  # dd-MM-yyyy / dd_MM_yyyy
+        '20\d{2}[01]\d'                   # yyyyMM
+    )
+
+    foreach ($pattern in $datePatterns) {
+        if ($nameWithoutExt -match $pattern) {
+            return $true
+        }
+    }
+
+    return $false
+}
+
+function Get-S3KeyWithDateSuffixFallback {
+    param(
+        [string]$RelativePath,
+        [DateTime]$FileLastWriteTimeUtc
+    )
+
+    if (-not $AppendDateSuffixIfNoDateInName) {
+        return $RelativePath
+    }
+
+    $lastSlash = $RelativePath.LastIndexOf('/')
+    $directoryPrefix = ""
+    $fileName = $RelativePath
+
+    if ($lastSlash -ge 0) {
+        $directoryPrefix = $RelativePath.Substring(0, $lastSlash + 1)
+        $fileName = $RelativePath.Substring($lastSlash + 1)
+    }
+
+    if (Test-FileNameHasDate -FileName $fileName) {
+        return $RelativePath
+    }
+
+    $baseName = [System.IO.Path]::GetFileNameWithoutExtension($fileName)
+    $extension = [System.IO.Path]::GetExtension($fileName)
+    $dateSuffix = $FileLastWriteTimeUtc.ToString($DateSuffixFormat)
+    $renamedFile = "$baseName`_$dateSuffix$extension"
+
+    return "$directoryPrefix$renamedFile"
+}
+
+function Get-VersionedS3Key {
+    param(
+        [string]$S3Key,
+        [DateTime]$VersionTimestampUtc
+    )
+
+    $lastSlash = $S3Key.LastIndexOf('/')
+    $directoryPrefix = ""
+    $fileName = $S3Key
+
+    if ($lastSlash -ge 0) {
+        $directoryPrefix = $S3Key.Substring(0, $lastSlash + 1)
+        $fileName = $S3Key.Substring($lastSlash + 1)
+    }
+
+    $baseName = [System.IO.Path]::GetFileNameWithoutExtension($fileName)
+    $extension = [System.IO.Path]::GetExtension($fileName)
+    $dateSuffix = $VersionTimestampUtc.ToString($DateSuffixFormat)
+    $versionedFile = "$baseName`_v$dateSuffix$extension"
+
+    return "$directoryPrefix$versionedFile"
 }
 
 function Get-SyncState {
@@ -296,6 +414,8 @@ function Save-S3IndexCache {
 
 try {
 
+Invoke-LogMaintenance -Path $LogPath -MaxSizeMB $LogMaxSizeMB -RetentionDays $LogRetentionDays
+
 Write-SyncLog "=========================================="
 Write-SyncLog "Starting recursive sync..."
 Write-SyncLog "Base: $BasePath"
@@ -392,12 +512,17 @@ if ($allFiles.Count -eq 0) {
 
         # Keep the exact original relative path and file name in S3
         $relativePath = $filePath.Substring($BasePath.Length).TrimStart('\\') -replace '\\', '/'
-        $s3Key = $relativePath
+        $baseS3Key = Get-S3KeyWithDateSuffixFallback -RelativePath $relativePath -FileLastWriteTimeUtc $file.LastWriteTimeUtc
+        $s3Key = $baseS3Key
         $sourceLastWriteUtc = $file.LastWriteTimeUtc.ToString("o")
         $sourceCreationUtc = $file.CreationTimeUtc.ToString("o")
         $metadata = @{
             "source-last-write-time-utc" = $sourceLastWriteUtc
             "source-creation-time-utc" = $sourceCreationUtc
+        }
+
+        if ($baseS3Key -ne $relativePath) {
+            Write-SyncLog "[$relativePath] No date detected in filename. Upload key changed to: $baseS3Key" -Level "WARN"
         }
 
         Write-SyncLog "[$relativePath] Processing: $fileName ($([math]::Round($file.Length / 1MB, 2)) MB)"
@@ -407,8 +532,12 @@ if ($allFiles.Count -eq 0) {
         # - If we have an index AND the key is missing or size differs → upload directly (no HEAD)
         # - If we have no index (DELTA without cache) → HEAD to know if it's a new upload or a no-op
         $shouldHead = $false
+        $baseKeyExistsInS3 = $false
         if ($s3Objects.Count -gt 0) {
-            if ($s3Objects.ContainsKey($s3Key) -and $s3Objects[$s3Key] -eq $file.Length) {
+            if ($s3Objects.ContainsKey($baseS3Key)) {
+                $baseKeyExistsInS3 = $true
+            }
+            if ($s3Objects.ContainsKey($baseS3Key) -and $s3Objects[$baseS3Key] -eq $file.Length) {
                 $shouldHead = $true
             }
         } else {
@@ -419,7 +548,8 @@ if ($allFiles.Count -eq 0) {
             $metadataMatches = $false
             $headExists = $true
             try {
-                $s3Head = Get-S3ObjectMetadata -BucketName $BucketName -Key $s3Key -Region $AwsRegion -ErrorAction Stop
+                $s3Head = Get-S3ObjectMetadata -BucketName $BucketName -Key $baseS3Key -Region $AwsRegion -ErrorAction Stop
+                $baseKeyExistsInS3 = $true
                 if ($s3Head.ContentLength -eq $file.Length) {
                     $s3SourceLastWriteUtc = [string]$s3Head.Metadata["source-last-write-time-utc"]
                     $s3SourceCreationUtc = [string]$s3Head.Metadata["source-creation-time-utc"]
@@ -439,6 +569,34 @@ if ($allFiles.Count -eq 0) {
 
             if ($metadataMatches) {
                 Write-SyncLog "[$relativePath] Unchanged in S3 (same key/size/metadata), skipping upload"
+                $totalSkipped++
+                continue
+            }
+        }
+
+        if ($VersionOnChangeAtExistingKey -and $baseKeyExistsInS3) {
+            $s3Key = Get-VersionedS3Key -S3Key $baseS3Key -VersionTimestampUtc $file.LastWriteTimeUtc
+            Write-SyncLog "[$relativePath] Existing key changed. Uploading as versioned object: $s3Key" -Level "WARN"
+
+            $versionMatches = $false
+            try {
+                $versionHead = Get-S3ObjectMetadata -BucketName $BucketName -Key $s3Key -Region $AwsRegion -ErrorAction Stop
+                if ($versionHead.ContentLength -eq $file.Length) {
+                    $versionLastWriteUtc = [string]$versionHead.Metadata["source-last-write-time-utc"]
+                    $versionCreationUtc = [string]$versionHead.Metadata["source-creation-time-utc"]
+                    if ($versionLastWriteUtc -eq $sourceLastWriteUtc -and $versionCreationUtc -eq $sourceCreationUtc) {
+                        $versionMatches = $true
+                    }
+                }
+            } catch {
+                $versionErr = $_.Exception.Message
+                if ($versionErr -notmatch "NotFound|NoSuchKey|does not exist|404|Not Found") {
+                    Write-SyncLog "[$relativePath] WARN: Could not read versioned S3 metadata for compare - $versionErr" -Level "WARN"
+                }
+            }
+
+            if ($versionMatches) {
+                Write-SyncLog "[$relativePath] Versioned object already exists with same metadata, skipping upload"
                 $totalSkipped++
                 continue
             }
