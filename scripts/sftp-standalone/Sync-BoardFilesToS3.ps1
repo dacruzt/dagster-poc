@@ -334,7 +334,11 @@ if ($cached) {
     Write-SyncLog "S3 index loaded from cache: $($s3Objects.Count) objects (age: $([math]::Round($cached.AgeHours, 1))h)"
 }
 
-$needRefresh = $doFullScan -and -not $cached
+# Refresh policy:
+# - Always refresh if no cache file exists at all (first run after deploy)
+# - Otherwise, only refresh during FULL scans when the cache has expired
+$cacheFileExists = Test-Path $S3IndexCacheFile
+$needRefresh = -not $cached -and (-not $cacheFileExists -or $doFullScan)
 if ($needRefresh) {
     $listStart = Get-Date
     try {
