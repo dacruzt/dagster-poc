@@ -252,6 +252,17 @@ function Get-FileContentSha256 {
     }
 }
 
+function Get-FileContentMd5 {
+    param([string]$FilePath)
+
+    try {
+        return (Get-FileHash -Path $FilePath -Algorithm MD5 -ErrorAction Stop).Hash.ToLowerInvariant()
+    } catch {
+        Write-SyncLog "WARN: Could not calculate MD5 for '$FilePath': $($_.Exception.Message)" -Level "WARN"
+        return $null
+    }
+}
+
 function Test-FileNameHasDate {
     param([string]$FileName)
 
@@ -625,15 +636,27 @@ if ($allFiles.Count -eq 0) {
             continue
         }
 
-        $sourceContentSha256 = Get-FileContentSha256 -FilePath $filePath
-        if (-not [string]::IsNullOrWhiteSpace($sourceContentSha256)) {
-            $metadata["source-content-sha256"] = $sourceContentSha256
-        }
+        $sourceContentSha256 = $null
+        $sourceContentMd5 = $null
 
         # If filename had no date and we generated a timestamped key, avoid duplicate
         # uploads by checking whether the same content hash already exists for that
         # file family (same folder + same original base name + same extension).
-        if ($baseS3Key -ne $relativePath -and -not [string]::IsNullOrWhiteSpace($sourceContentSha256)) {
+        if ($baseS3Key -ne $relativePath) {
+            $sourceContentSha256 = Get-FileContentSha256 -FilePath $filePath
+            if (-not [string]::IsNullOrWhiteSpace($sourceContentSha256)) {
+                $metadata["source-content-sha256"] = $sourceContentSha256
+            }
+
+            $sourceContentMd5 = Get-FileContentMd5 -FilePath $filePath
+            if (-not [string]::IsNullOrWhiteSpace($sourceContentMd5)) {
+                $metadata["source-content-md5"] = $sourceContentMd5
+            }
+
+            if ([string]::IsNullOrWhiteSpace($sourceContentSha256) -and [string]::IsNullOrWhiteSpace($sourceContentMd5)) {
+                Write-SyncLog "[$relativePath] WARN: Could not compute content hashes for deduplication; continuing with normal upload checks" -Level "WARN"
+            }
+
             $relativeLastSlash = $relativePath.LastIndexOf('/')
             $relativeDirPrefix = ""
             $relativeFileName = $relativePath
@@ -655,10 +678,30 @@ if ($allFiles.Count -eq 0) {
             foreach ($candidateKey in $familyKeys) {
                 try {
                     $candidateHead = Get-S3ObjectMetadata -BucketName $BucketName -Key $candidateKey -Region $AwsRegion -ErrorAction Stop
+
                     $candidateHash = [string]$candidateHead.Metadata["source-content-sha256"]
-                    if (-not [string]::IsNullOrWhiteSpace($candidateHash) -and $candidateHash.ToLowerInvariant() -eq $sourceContentSha256) {
+                    if (-not [string]::IsNullOrWhiteSpace($candidateHash) -and -not [string]::IsNullOrWhiteSpace($sourceContentSha256) -and $candidateHash.ToLowerInvariant() -eq $sourceContentSha256) {
                         $matchingKey = $candidateKey
                         break
+                    }
+
+                    $candidateMd5 = [string]$candidateHead.Metadata["source-content-md5"]
+                    if (-not [string]::IsNullOrWhiteSpace($candidateMd5) -and -not [string]::IsNullOrWhiteSpace($sourceContentMd5) -and $candidateMd5.ToLowerInvariant() -eq $sourceContentMd5) {
+                        $matchingKey = $candidateKey
+                        break
+                    }
+
+                    # Backward compatibility for historical uploads without custom hash metadata.
+                    if (-not [string]::IsNullOrWhiteSpace($sourceContentMd5)) {
+                        $candidateEtag = [string]$candidateHead.ETag
+                        if (-not [string]::IsNullOrWhiteSpace($candidateEtag)) {
+                            $normalizedEtag = $candidateEtag.Trim('"').ToLowerInvariant()
+                            # Multipart ETag contains '-', so only compare single-part ETags.
+                            if ($normalizedEtag -notmatch '-' -and $normalizedEtag -eq $sourceContentMd5) {
+                                $matchingKey = $candidateKey
+                                break
+                            }
+                        }
                     }
                 } catch {
                     $candidateErr = $_.Exception.Message
