@@ -116,7 +116,7 @@ $LogMaxSizeMB = 50
 $LogRetentionDays = 7
 $BucketName = "cebroker-sftp-raw-test-backup"
 $AwsRegion = "us-east-1"
-$SyncAfterDate = [DateTime]"2026-03-20"
+$SyncAfterDate = [DateTime]"2026-05-13"
 $StateFile = "C:\CEB_FTP_Data\Logs\.sync_state_boardfiles.json"
 $S3IndexCacheFile = "C:\CEB_FTP_Data\Logs\.s3_index_boardfiles.json"
 $S3IndexCacheTtlHours = 168  # 7 days; full scan refreshes when exceeded
@@ -239,6 +239,17 @@ function Get-FileStableSize {
     Start-Sleep -Seconds $WaitSeconds
     $size2 = (Get-Item $FilePath).Length
     return $size1 -eq $size2
+}
+
+function Get-FileContentSha256 {
+    param([string]$FilePath)
+
+    try {
+        return (Get-FileHash -Path $FilePath -Algorithm SHA256 -ErrorAction Stop).Hash.ToLowerInvariant()
+    } catch {
+        Write-SyncLog "WARN: Could not calculate SHA256 for '$FilePath': $($_.Exception.Message)" -Level "WARN"
+        return $null
+    }
 }
 
 function Test-FileNameHasDate {
@@ -612,6 +623,56 @@ if ($allFiles.Count -eq 0) {
             Write-SyncLog "[$relativePath] File is being transferred, skipping: $fileName" -Level "WARN"
             $totalSkipped++
             continue
+        }
+
+        $sourceContentSha256 = Get-FileContentSha256 -FilePath $filePath
+        if (-not [string]::IsNullOrWhiteSpace($sourceContentSha256)) {
+            $metadata["source-content-sha256"] = $sourceContentSha256
+        }
+
+        # If filename had no date and we generated a timestamped key, avoid duplicate
+        # uploads by checking whether the same content hash already exists for that
+        # file family (same folder + same original base name + same extension).
+        if ($baseS3Key -ne $relativePath -and -not [string]::IsNullOrWhiteSpace($sourceContentSha256)) {
+            $relativeLastSlash = $relativePath.LastIndexOf('/')
+            $relativeDirPrefix = ""
+            $relativeFileName = $relativePath
+            if ($relativeLastSlash -ge 0) {
+                $relativeDirPrefix = $relativePath.Substring(0, $relativeLastSlash + 1)
+                $relativeFileName = $relativePath.Substring($relativeLastSlash + 1)
+            }
+
+            $relativeBaseName = [System.IO.Path]::GetFileNameWithoutExtension($relativeFileName)
+            $relativeExtension = [System.IO.Path]::GetExtension($relativeFileName)
+            $familyPrefix = "$relativeDirPrefix$relativeBaseName`_"
+
+            $matchingKey = $null
+            $familyKeys = @(
+                $s3Objects.Keys |
+                    Where-Object { $_ -like "$familyPrefix*$relativeExtension" -and $s3Objects[$_] -eq $file.Length }
+            )
+
+            foreach ($candidateKey in $familyKeys) {
+                try {
+                    $candidateHead = Get-S3ObjectMetadata -BucketName $BucketName -Key $candidateKey -Region $AwsRegion -ErrorAction Stop
+                    $candidateHash = [string]$candidateHead.Metadata["source-content-sha256"]
+                    if (-not [string]::IsNullOrWhiteSpace($candidateHash) -and $candidateHash.ToLowerInvariant() -eq $sourceContentSha256) {
+                        $matchingKey = $candidateKey
+                        break
+                    }
+                } catch {
+                    $candidateErr = $_.Exception.Message
+                    if ($candidateErr -notmatch "NotFound|NoSuchKey|does not exist|404|Not Found") {
+                        Write-SyncLog "[$relativePath] WARN: Could not validate candidate key '$candidateKey' - $candidateErr" -Level "WARN"
+                    }
+                }
+            }
+
+            if ($matchingKey) {
+                Write-SyncLog "[$relativePath] Unchanged content already exists in S3 as '$matchingKey', skipping upload"
+                $totalSkipped++
+                continue
+            }
         }
 
         try {
