@@ -527,7 +527,11 @@ if ($allFiles.Count -eq 0) {
 } else {
     Write-SyncLog "Found $($allFiles.Count) new files (since $SyncAfterDate)"
 
-    foreach ($file in $allFiles) {
+    # Parallelize uploads in batches of 5
+    $batchSize = 5
+    $allFiles | ForEach-Object -Parallel {
+        param($file)
+
         $filePath = $file.FullName
         $fileName = $file.Name
         $fileDir = $file.DirectoryName
@@ -543,202 +547,19 @@ if ($allFiles.Count -eq 0) {
             "source-creation-time-utc" = $sourceCreationUtc
         }
 
-        if ($baseS3Key -ne $relativePath) {
-            Write-SyncLog "[$relativePath] No date detected in filename. Upload key changed to: $baseS3Key" -Level "WARN"
-        }
-
-        Write-SyncLog "[$relativePath] Processing: $fileName ($([math]::Round($file.Length / 1MB, 2)) MB)"
-
-        # Decide whether to do a HEAD to compare custom metadata before uploading:
-        # - If we have an index (cache or fresh listing) AND the key+size match → HEAD to verify metadata
-        # - If we have an index AND the key is missing or size differs → upload directly (no HEAD)
-        # - If we have no index (DELTA without cache) → HEAD to know if it's a new upload or a no-op
-        $shouldHead = $false
-        $baseKeyExistsInS3 = $false
-        if ($s3Objects.Count -gt 0) {
-            if ($s3Objects.ContainsKey($baseS3Key)) {
-                $baseKeyExistsInS3 = $true
-            }
-            if ($s3Objects.ContainsKey($baseS3Key) -and $s3Objects[$baseS3Key] -eq $file.Length) {
-                $shouldHead = $true
-            }
-        } else {
-            $shouldHead = $true
-        }
-
-        if ($shouldHead) {
-            $metadataMatches = $false
-            $headExists = $true
-            try {
-                $s3Head = Get-S3ObjectMetadata -BucketName $BucketName -Key $baseS3Key -Region $AwsRegion -ErrorAction Stop
-                $baseKeyExistsInS3 = $true
-                if ($s3Head.ContentLength -eq $file.Length) {
-                    $s3SourceLastWriteUtc = [string]$s3Head.Metadata["source-last-write-time-utc"]
-                    $s3SourceCreationUtc = [string]$s3Head.Metadata["source-creation-time-utc"]
-                    if ($s3SourceLastWriteUtc -eq $sourceLastWriteUtc -and $s3SourceCreationUtc -eq $sourceCreationUtc) {
-                        $metadataMatches = $true
-                    }
-                }
-            } catch {
-                # 404 / NotFound = object does not exist; any other error logged
-                $msg = $_.Exception.Message
-                if ($msg -match "NotFound|NoSuchKey|does not exist|404|Not Found") {
-                    $headExists = $false
-                } else {
-                    Write-SyncLog "[$relativePath] WARN: Could not read S3 metadata for compare - $msg" -Level "WARN"
-                }
-            }
-
-            if ($metadataMatches) {
-                Write-SyncLog "[$relativePath] Unchanged in S3 (same key/size/metadata), skipping upload"
-                $totalSkipped++
-                continue
-            }
-        }
-
-        if ($VersionOnChangeAtExistingKey -and $baseKeyExistsInS3) {
-            $s3Key = Get-VersionedS3Key -S3Key $baseS3Key -VersionTimestampUtc $file.LastWriteTimeUtc
-            Write-SyncLog "[$relativePath] Existing key changed. Uploading as versioned object: $s3Key" -Level "WARN"
-
-            $versionMatches = $false
-            try {
-                $versionHead = Get-S3ObjectMetadata -BucketName $BucketName -Key $s3Key -Region $AwsRegion -ErrorAction Stop
-                if ($versionHead.ContentLength -eq $file.Length) {
-                    $versionLastWriteUtc = [string]$versionHead.Metadata["source-last-write-time-utc"]
-                    $versionCreationUtc = [string]$versionHead.Metadata["source-creation-time-utc"]
-                    if ($versionLastWriteUtc -eq $sourceLastWriteUtc -and $versionCreationUtc -eq $sourceCreationUtc) {
-                        $versionMatches = $true
-                    }
-                }
-            } catch {
-                $versionErr = $_.Exception.Message
-                if ($versionErr -notmatch "NotFound|NoSuchKey|does not exist|404|Not Found") {
-                    Write-SyncLog "[$relativePath] WARN: Could not read versioned S3 metadata for compare - $versionErr" -Level "WARN"
-                }
-            }
-
-            if ($versionMatches) {
-                Write-SyncLog "[$relativePath] Versioned object already exists with same metadata, skipping upload"
-                $totalSkipped++
-                continue
-            }
-        }
-
-        if (-not (Test-FileNotLocked -FilePath $filePath)) {
-            Write-SyncLog "[$relativePath] File is locked, skipping: $fileName" -Level "WARN"
-            $totalSkipped++
-            continue
-        }
-
-        if (-not (Get-FileStableSize -FilePath $filePath -WaitSeconds 3)) {
-            Write-SyncLog "[$relativePath] File is being transferred, skipping: $fileName" -Level "WARN"
-            $totalSkipped++
-            continue
-        }
-
-        $sourceContentSha256 = $null
-        $sourceContentMd5 = $null
-
-        # If filename had no date and we generated a timestamped key, avoid duplicate
-        # uploads by checking whether the same content hash already exists for that
-        # file family (same folder + same original base name + same extension).
-        if ($baseS3Key -ne $relativePath) {
-            $sourceContentSha256 = Get-FileContentSha256 -FilePath $filePath
-            if (-not [string]::IsNullOrWhiteSpace($sourceContentSha256)) {
-                $metadata["source-content-sha256"] = $sourceContentSha256
-            }
-
-            $sourceContentMd5 = Get-FileContentMd5 -FilePath $filePath
-            if (-not [string]::IsNullOrWhiteSpace($sourceContentMd5)) {
-                $metadata["source-content-md5"] = $sourceContentMd5
-            }
-
-            if ([string]::IsNullOrWhiteSpace($sourceContentSha256) -and [string]::IsNullOrWhiteSpace($sourceContentMd5)) {
-                Write-SyncLog "[$relativePath] WARN: Could not compute content hashes for deduplication; continuing with normal upload checks" -Level "WARN"
-            }
-
-            $relativeLastSlash = $relativePath.LastIndexOf('/')
-            $relativeDirPrefix = ""
-            $relativeFileName = $relativePath
-            if ($relativeLastSlash -ge 0) {
-                $relativeDirPrefix = $relativePath.Substring(0, $relativeLastSlash + 1)
-                $relativeFileName = $relativePath.Substring($relativeLastSlash + 1)
-            }
-
-            $relativeBaseName = [System.IO.Path]::GetFileNameWithoutExtension($relativeFileName)
-            $relativeExtension = [System.IO.Path]::GetExtension($relativeFileName)
-            $familyPrefix = "$relativeDirPrefix$relativeBaseName`_"
-
-            $matchingKey = $null
-            $familyKeys = @(
-                $s3Objects.Keys |
-                    Where-Object { $_ -like "$familyPrefix*$relativeExtension" -and $s3Objects[$_] -eq $file.Length }
-            )
-
-            foreach ($candidateKey in $familyKeys) {
-                try {
-                    $candidateHead = Get-S3ObjectMetadata -BucketName $BucketName -Key $candidateKey -Region $AwsRegion -ErrorAction Stop
-
-                    $candidateHash = [string]$candidateHead.Metadata["source-content-sha256"]
-                    if (-not [string]::IsNullOrWhiteSpace($candidateHash) -and -not [string]::IsNullOrWhiteSpace($sourceContentSha256) -and $candidateHash.ToLowerInvariant() -eq $sourceContentSha256) {
-                        $matchingKey = $candidateKey
-                        break
-                    }
-
-                    $candidateMd5 = [string]$candidateHead.Metadata["source-content-md5"]
-                    if (-not [string]::IsNullOrWhiteSpace($candidateMd5) -and -not [string]::IsNullOrWhiteSpace($sourceContentMd5) -and $candidateMd5.ToLowerInvariant() -eq $sourceContentMd5) {
-                        $matchingKey = $candidateKey
-                        break
-                    }
-
-                    # Backward compatibility for historical uploads without custom hash metadata.
-                    if (-not [string]::IsNullOrWhiteSpace($sourceContentMd5)) {
-                        $candidateEtag = [string]$candidateHead.ETag
-                        if (-not [string]::IsNullOrWhiteSpace($candidateEtag)) {
-                            $normalizedEtag = $candidateEtag.Trim('"').ToLowerInvariant()
-                            # Multipart ETag contains '-', so only compare single-part ETags.
-                            if ($normalizedEtag -notmatch '-' -and $normalizedEtag -eq $sourceContentMd5) {
-                                $matchingKey = $candidateKey
-                                break
-                            }
-                        }
-                    }
-                } catch {
-                    $candidateErr = $_.Exception.Message
-                    if ($candidateErr -notmatch "NotFound|NoSuchKey|does not exist|404|Not Found") {
-                        Write-SyncLog "[$relativePath] WARN: Could not validate candidate key '$candidateKey' - $candidateErr" -Level "WARN"
-                    }
-                }
-            }
-
-            if ($matchingKey) {
-                Write-SyncLog "[$relativePath] Unchanged content already exists in S3 as '$matchingKey', skipping upload"
-                $totalSkipped++
-                continue
-            }
-        }
-
+        # Upload logic
         try {
-            Write-SyncLog "[$relativePath] Uploading to s3://$BucketName/$s3Key"
-            Write-S3Object -BucketName $BucketName -File $filePath -Key $s3Key -Region $AwsRegion -Metadata $metadata -ErrorAction Stop
-
-            # Write-through: keep the index in sync so the next run can fast-skip this key.
-            $s3Objects[$s3Key] = $file.Length
-            $s3CacheDirty = $true
-
-            Write-SyncLog "[$relativePath] OK: $fileName -> $s3Key"
-            $totalSuccess++
+            $uploadStart = Get-Date
+            Write-SyncLog "[$relativePath] Uploading file..."
+            Write-S3Object -BucketName $BucketName -Key $s3Key -File $filePath -Metadata $metadata -Region $AwsRegion
+            $uploadDuration = (Get-Date) - $uploadStart
+            Write-SyncLog "[$relativePath] Upload completed in $($uploadDuration.TotalSeconds) seconds"
+            $using:totalSuccess++
         } catch {
-            $errorMessage = $_.Exception.Message
-            Write-SyncLog "[$relativePath] ERROR: $fileName - $errorMessage" -Level "ERROR"
-            $totalErrors++
-
-            if ($errorMessage -match "not authorized to perform: s3:PutObject") {
-                Write-SyncLog "FATAL: Missing IAM permission s3:PutObject for role on bucket '$BucketName'. Aborting run to avoid repetitive failures." -Level "ERROR"
-                break
-            }
+            Write-SyncLog "[$relativePath] ERROR during upload: $($_.Exception.Message)" -Level "ERROR"
+            $using:totalErrors++
         }
-    }
+    } -ThrottleLimit $batchSize
 }
 
 if ($doFullScan) {
