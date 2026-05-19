@@ -107,6 +107,19 @@ Set-Content -Path $GlobalLockFile -Value "PID=$PID`nScript=Sync-BoardFilesToS3`n
 $ErrorActionPreference = "Continue"
 
 # -----------------------------------------------------------------------------
+# AWS MODULE BOOTSTRAP
+# -----------------------------------------------------------------------------
+# Prefer the modular AWS.Tools.S3 (loads in 2-5s) over the monolithic AWSPowerShell
+# (60-90s). When both are installed side-by-side, force this script's session to
+# use the modular one so the runspace pool inherits it. Other scripts on the box
+# that rely on AWSPowerShell are not affected — only this PowerShell session.
+if (Get-Module -Name AWS.Tools.S3 -ListAvailable -ErrorAction SilentlyContinue) {
+    try { Remove-Module AWSPowerShell -ErrorAction SilentlyContinue } catch {}
+    try { Remove-Module AWSPowerShell.NetCore -ErrorAction SilentlyContinue } catch {}
+    Import-Module AWS.Tools.S3 -ErrorAction SilentlyContinue
+}
+
+# -----------------------------------------------------------------------------
 # CONFIGURATION
 # -----------------------------------------------------------------------------
 
@@ -116,7 +129,7 @@ $LogMaxSizeMB = 50
 $LogRetentionDays = 7
 $BucketName = "cebroker-sftp-raw-test-backup"
 $AwsRegion = "us-east-1"
-$SyncAfterDate = [DateTime]"2026-05-13"
+$SyncAfterDate = [DateTime]"2026-05-19"
 $StateFile = "C:\CEB_FTP_Data\Logs\.sync_state_boardfiles.json"
 $S3IndexCacheFile = "C:\CEB_FTP_Data\Logs\.s3_index_boardfiles.json"
 $S3IndexCacheTtlHours = 168  # 7 days; full scan refreshes when exceeded
@@ -125,6 +138,8 @@ $FullReconcileIntervalMinutes = 360
 $AppendDateSuffixIfNoDateInName = $true
 $DateSuffixFormat = "yyyyMMdd_HHmmss"
 $VersionOnChangeAtExistingKey = $true
+$ParallelUploadThrottle = 3
+$ParallelMinFileCount = 15  # Only spin up the runspace pool when batch >= this
 
 # -----------------------------------------------------------------------------
 # FUNCTIONS
@@ -234,8 +249,19 @@ function Test-FileNotLocked {
 }
 
 function Get-FileStableSize {
-    param([string]$FilePath, [int]$WaitSeconds = 5)
-    $size1 = (Get-Item $FilePath).Length
+    param(
+        [string]$FilePath,
+        [int]$WaitSeconds = 5,
+        [int]$SkipIfOlderThanSeconds = 120
+    )
+    $item = Get-Item $FilePath
+    # Files that haven't been touched in the last 2 minutes are almost certainly
+    # fully written. Skip the blocking sleep for those — this is the biggest
+    # parallelism win since most delta-detected files are already settled.
+    if (((Get-Date) - $item.LastWriteTime).TotalSeconds -gt $SkipIfOlderThanSeconds) {
+        return $true
+    }
+    $size1 = $item.Length
     Start-Sleep -Seconds $WaitSeconds
     $size2 = (Get-Item $FilePath).Length
     return $size1 -eq $size2
@@ -269,6 +295,8 @@ function Test-FileNameHasDate {
     $nameWithoutExt = [System.IO.Path]::GetFileNameWithoutExtension($FileName)
     $datePatterns = @(
         '20\d{2}[01]\d[0-3]\d',          # yyyyMMdd
+        '[0-3]\d[01]\d20\d{2}',          # ddMMyyyy (CERosterAll style)
+        '[01]\d[0-3]\d20\d{2}',          # MMddyyyy
         '20\d{2}[-_][01]\d[-_][0-3]\d',  # yyyy-MM-dd / yyyy_MM_dd
         '[0-3]\d[-_][01]\d[-_]20\d{2}',  # dd-MM-yyyy / dd_MM_yyyy
         '20\d{2}[01]\d'                   # yyyyMM
@@ -364,8 +392,25 @@ function Save-SyncState {
         LastDeltaScanUtc = $LastDeltaScanUtc.ToString("o")
         LastFullScanUtc  = if ($LastFullScanUtc -gt [DateTime]::MinValue) { $LastFullScanUtc.ToString("o") } else { $null }
     }
+    $json = $state | ConvertTo-Json
 
-    $state | ConvertTo-Json | Set-Content -Path $StateFile -Force
+    $maxAttempts = 5
+    for ($i = 0; $i -lt $maxAttempts; $i++) {
+        try {
+            if (Test-Path $StateFile) {
+                # Clear read-only attribute if some other process set it.
+                try { (Get-Item $StateFile).IsReadOnly = $false } catch {}
+            }
+            Set-Content -Path $StateFile -Value $json -Force -ErrorAction Stop
+            return
+        } catch {
+            if ($i -eq ($maxAttempts - 1)) {
+                Write-SyncLog "ERROR writing state file '$StateFile' after $maxAttempts attempts: $($_.Exception.Message)" -Level "ERROR"
+                throw
+            }
+            Start-Sleep -Milliseconds 500
+        }
+    }
 }
 
 function Convert-StateValueToUtc {
@@ -418,15 +463,28 @@ function Get-S3IndexFromCache {
 function Save-S3IndexCache {
     param([hashtable]$Objects, [string]$BucketName)
 
-    try {
-        $payload = [PSCustomObject]@{
-            GeneratedAtUtc = (Get-Date).ToUniversalTime().ToString("o")
-            BucketName     = $BucketName
-            Objects        = $Objects
+    $payload = [PSCustomObject]@{
+        GeneratedAtUtc = (Get-Date).ToUniversalTime().ToString("o")
+        BucketName     = $BucketName
+        Objects        = $Objects
+    }
+    $json = $payload | ConvertTo-Json -Depth 5 -Compress
+
+    $maxAttempts = 5
+    for ($i = 0; $i -lt $maxAttempts; $i++) {
+        try {
+            if (Test-Path $S3IndexCacheFile) {
+                try { (Get-Item $S3IndexCacheFile).IsReadOnly = $false } catch {}
+            }
+            Set-Content -Path $S3IndexCacheFile -Value $json -Force -ErrorAction Stop
+            return
+        } catch {
+            if ($i -eq ($maxAttempts - 1)) {
+                Write-SyncLog "WARN saving S3 index cache after $maxAttempts attempts: $($_.Exception.Message)" -Level "WARN"
+                return
+            }
+            Start-Sleep -Milliseconds 500
         }
-        $payload | ConvertTo-Json -Depth 5 -Compress | Set-Content -Path $S3IndexCacheFile -Force
-    } catch {
-        Write-SyncLog "WARN saving S3 index cache: $($_.Exception.Message)" -Level "WARN"
     }
 }
 
@@ -447,6 +505,7 @@ Write-SyncLog "=========================================="
 $totalSuccess = 0
 $totalErrors = 0
 $totalSkipped = 0
+$totalTransferredBytes = [int64]0
 
 # Load scan state and determine whether this run is full or delta
 $syncState = Get-SyncState
@@ -527,50 +586,262 @@ if ($allFiles.Count -eq 0) {
 } else {
     Write-SyncLog "Found $($allFiles.Count) new files (since $SyncAfterDate)"
 
-    # Parallelize uploads in batches of 5
-    $batchSize = 5
-    $allFiles | ForEach-Object -Parallel {
+    # Per-file scriptblock — used by both sequential and parallel paths below.
+    # Returns a PSCustomObject result; main thread aggregates counters after.
+    $perFileScript = {
         param($file)
 
         $filePath = $file.FullName
-        $fileName = $file.Name
-        $fileDir = $file.DirectoryName
-
-        # Keep the exact original relative path and file name in S3
         $relativePath = $filePath.Substring($BasePath.Length).TrimStart('\\') -replace '\\', '/'
+
+        if (-not (Test-FileNotLocked -FilePath $filePath)) {
+            Write-SyncLog "[$relativePath] File is locked/being written, will retry next run" -Level "WARN"
+            return [PSCustomObject]@{ Status = 'Skipped'; Bytes = 0; Key = $null }
+        }
+        if (-not (Get-FileStableSize -FilePath $filePath -WaitSeconds 5)) {
+            Write-SyncLog "[$relativePath] File size still changing, will retry next run" -Level "WARN"
+            return [PSCustomObject]@{ Status = 'Skipped'; Bytes = 0; Key = $null }
+        }
         $baseS3Key = Get-S3KeyWithDateSuffixFallback -RelativePath $relativePath -FileLastWriteTimeUtc $file.LastWriteTimeUtc
         $s3Key = $baseS3Key
         $sourceLastWriteUtc = $file.LastWriteTimeUtc.ToString("o")
         $sourceCreationUtc = $file.CreationTimeUtc.ToString("o")
+        $localContentSha256 = $null
+        $existingFirstSeenUtc = $null
         $metadata = @{
             "source-last-write-time-utc" = $sourceLastWriteUtc
             "source-creation-time-utc" = $sourceCreationUtc
         }
 
-        # Upload logic
+        if ($baseS3Key -ne $relativePath) {
+            Write-SyncLog "[$relativePath] No date detected in filename. Upload key changed to: $baseS3Key" -Level "WARN"
+        }
+
+        $shouldHead = $false
+        $baseKeyExistsInS3 = $false
+        if ($s3Objects.Count -gt 0) {
+            if ($s3Objects.ContainsKey($baseS3Key)) {
+                $baseKeyExistsInS3 = $true
+                $shouldHead = $true
+            }
+            if (-not $s3Objects.ContainsKey($baseS3Key)) {
+                $shouldHead = $true
+            }
+        } else {
+            $shouldHead = $true
+        }
+
+        if ($shouldHead) {
+            $metadataMatches = $false
+            try {
+                $s3Head = Get-S3ObjectMetadata -BucketName $BucketName -Key $baseS3Key -Region $AwsRegion -ErrorAction Stop
+                $baseKeyExistsInS3 = $true
+                $s3FirstSeenUtc = [string]$s3Head.Metadata["source-first-seen-utc"]
+                if (-not [string]::IsNullOrWhiteSpace($s3FirstSeenUtc)) {
+                    $existingFirstSeenUtc = $s3FirstSeenUtc
+                }
+                if ($s3Head.ContentLength -eq $file.Length) {
+                    $s3SourceLastWriteUtc = [string]$s3Head.Metadata["source-last-write-time-utc"]
+                    $s3SourceCreationUtc = [string]$s3Head.Metadata["source-creation-time-utc"]
+                    if ($s3SourceLastWriteUtc -eq $sourceLastWriteUtc -and $s3SourceCreationUtc -eq $sourceCreationUtc) {
+                        $metadataMatches = $true
+                    } else {
+                        $s3ContentSha256 = [string]$s3Head.Metadata["source-content-sha256"]
+                        if (-not [string]::IsNullOrWhiteSpace($s3ContentSha256)) {
+                            if ($null -eq $localContentSha256) {
+                                $localContentSha256 = Get-FileContentSha256 -FilePath $filePath
+                            }
+                            if ($localContentSha256 -and ($localContentSha256 -eq $s3ContentSha256)) {
+                                $metadataMatches = $true
+                                Write-SyncLog "[$relativePath] Content hash matches existing S3 object, skipping upload"
+                            }
+                        }
+                    }
+                }
+            } catch {
+                $msg = $_.Exception.Message
+                if ($msg -notmatch "NotFound|NoSuchKey|does not exist|404|Not Found") {
+                    Write-SyncLog "[$relativePath] WARN: Could not read S3 metadata for compare - $msg" -Level "WARN"
+                }
+            }
+
+            if ($metadataMatches) {
+                Write-SyncLog "[$relativePath] Unchanged in S3 (same key/size/metadata), skipping upload"
+                return [PSCustomObject]@{ Status = 'Skipped'; Bytes = 0; Key = $null }
+            }
+        }
+
+        if ($VersionOnChangeAtExistingKey -and $baseKeyExistsInS3) {
+            $s3Key = Get-VersionedS3Key -S3Key $baseS3Key -VersionTimestampUtc $file.LastWriteTimeUtc
+            Write-SyncLog "[$relativePath] Existing key changed. Writing versioned key: $s3Key"
+        }
+
         try {
+            if ($null -eq $localContentSha256) {
+                $localContentSha256 = Get-FileContentSha256 -FilePath $filePath
+            }
+            if ($localContentSha256) {
+                $metadata["source-content-sha256"] = $localContentSha256
+            }
+
+            if ($existingFirstSeenUtc) {
+                $metadata["source-first-seen-utc"] = $existingFirstSeenUtc
+            } else {
+                $firstSeenSource = if ($file.LastWriteTimeUtc -lt $file.CreationTimeUtc) {
+                    $file.LastWriteTimeUtc
+                } else {
+                    $file.CreationTimeUtc
+                }
+                $metadata["source-first-seen-utc"] = $firstSeenSource.ToString("o")
+            }
+
             $uploadStart = Get-Date
-            Write-SyncLog "[$relativePath] Uploading file..."
+            Write-SyncLog "[$relativePath] Uploading file (size: $([math]::Round($file.Length / 1MB, 2)) MB)..."
             Write-S3Object -BucketName $BucketName -Key $s3Key -File $filePath -Metadata $metadata -Region $AwsRegion
             $uploadDuration = (Get-Date) - $uploadStart
             Write-SyncLog "[$relativePath] Upload completed in $($uploadDuration.TotalSeconds) seconds"
-            $using:totalSuccess++
+            return [PSCustomObject]@{ Status = 'Success'; Bytes = [int64]$file.Length; Key = $s3Key }
         } catch {
             Write-SyncLog "[$relativePath] ERROR during upload: $($_.Exception.Message)" -Level "ERROR"
-            $using:totalErrors++
+            return [PSCustomObject]@{ Status = 'Error'; Bytes = 0; Key = $null }
         }
-    } -ThrottleLimit $batchSize
+    }
+
+    # Decide execution mode based on batch size. RunspacePool setup costs 30-90s
+    # because each runspace cold-loads the AWS module on its own — that wins
+    # back time only when the batch is big enough to amortize the cost.
+    $useParallel = ($allFiles.Count -ge $ParallelMinFileCount) -and ($ParallelUploadThrottle -gt 1)
+
+    if ($useParallel) {
+        Write-SyncLog "PARALLEL mode (throttle=$ParallelUploadThrottle, batch=$($allFiles.Count) >= threshold=$ParallelMinFileCount)"
+
+        # Build a runspace pool so this works in both Windows PowerShell 5.1 and
+        # PowerShell 7+ (ForEach-Object -Parallel is PS 7-only).
+        $iss = [System.Management.Automation.Runspaces.InitialSessionState]::CreateDefault()
+
+        # Preload the AWS module so each runspace doesn't cold-start it on first use.
+        # Prefer the modular AWS.Tools.S3 if available — much faster than the
+        # monolithic AWSPowerShell. Fall back to whatever Write-S3Object resolves to.
+        $awsModuleName = $null
+        foreach ($candidate in @('AWS.Tools.S3', 'AWSPowerShell.NetCore', 'AWSPowerShell')) {
+            if (Get-Module -Name $candidate -ListAvailable -ErrorAction SilentlyContinue) {
+                $awsModuleName = $candidate
+                break
+            }
+        }
+        if (-not $awsModuleName) {
+            $awsModuleName = (Get-Command Write-S3Object -ErrorAction SilentlyContinue).Module.Name
+        }
+        if ($awsModuleName) {
+            $iss.ImportPSModule($awsModuleName)
+            Write-SyncLog "Preloading AWS module '$awsModuleName' into runspace pool"
+        } else {
+            Write-SyncLog "WARN: Could not detect AWS module name; runspaces will auto-load on first cmdlet call (slow)" -Level "WARN"
+        }
+
+        # Inject helper functions into every runspace's session state.
+        $functionsToInject = @(
+            'Write-SyncLog', 'Test-FileNotLocked', 'Get-FileStableSize',
+            'Get-FileContentSha256', 'Test-FileNameHasDate',
+            'Get-S3KeyWithDateSuffixFallback', 'Get-VersionedS3Key'
+        )
+        foreach ($funcName in $functionsToInject) {
+            $funcDef = (Get-Command $funcName).Definition
+            $iss.Commands.Add(
+                [System.Management.Automation.Runspaces.SessionStateFunctionEntry]::new($funcName, $funcDef)
+            )
+        }
+
+        # Inject shared config + the S3 index (read-only inside threads).
+        $varsToInject = @{
+            BucketName                     = $BucketName
+            AwsRegion                      = $AwsRegion
+            BasePath                       = $BasePath
+            LogPath                        = $LogPath
+            AppendDateSuffixIfNoDateInName = $AppendDateSuffixIfNoDateInName
+            DateSuffixFormat               = $DateSuffixFormat
+            VersionOnChangeAtExistingKey   = $VersionOnChangeAtExistingKey
+            s3Objects                      = $s3Objects
+        }
+        foreach ($pair in $varsToInject.GetEnumerator()) {
+            $iss.Variables.Add(
+                [System.Management.Automation.Runspaces.SessionStateVariableEntry]::new($pair.Key, $pair.Value, '')
+            )
+        }
+
+        $runspacePool = [runspacefactory]::CreateRunspacePool(1, $ParallelUploadThrottle, $iss, $Host)
+        $runspacePool.Open()
+
+        # Submit every file as a job into the pool.
+        $jobs = New-Object System.Collections.Generic.List[object]
+        foreach ($file in $allFiles) {
+            $ps = [powershell]::Create()
+            $ps.RunspacePool = $runspacePool
+            [void]$ps.AddScript($perFileScript).AddArgument($file)
+            $jobs.Add([PSCustomObject]@{ PS = $ps; Handle = $ps.BeginInvoke() })
+        }
+
+        # EndInvoke each in submission order; pool runs them concurrently behind.
+        $parallelResults = foreach ($job in $jobs) {
+            try {
+                $job.PS.EndInvoke($job.Handle)
+            } catch {
+                Write-SyncLog "Runspace job failed unexpectedly: $($_.Exception.Message)" -Level "ERROR"
+                [PSCustomObject]@{ Status = 'Error'; Bytes = 0; Key = $null }
+            } finally {
+                $job.PS.Dispose()
+            }
+        }
+
+        $runspacePool.Close()
+        $runspacePool.Dispose()
+    } else {
+        Write-SyncLog "SEQUENTIAL mode (batch=$($allFiles.Count) < threshold=$ParallelMinFileCount)"
+        # Invoke the scriptblock directly in script scope; helper functions and
+        # config variables are already available there.
+        $parallelResults = foreach ($file in $allFiles) {
+            & $perFileScript $file
+        }
+    }
+
+    # Aggregate results on main thread (single-threaded; safe to mutate state)
+    foreach ($r in $parallelResults) {
+        switch ($r.Status) {
+            'Success' {
+                $totalSuccess++
+                $totalTransferredBytes += [int64]$r.Bytes
+                if ($r.Key) {
+                    $s3Objects[$r.Key] = [long]$r.Bytes
+                    $s3CacheDirty = $true
+                }
+            }
+            'Error'   { $totalErrors++ }
+            'Skipped' { $totalSkipped++ }
+        }
+    }
 }
 
-if ($doFullScan) {
-    Save-SyncState -LastDeltaScanUtc $nowUtc -LastFullScanUtc $nowUtc
+$runCompletedUtc = (Get-Date).ToUniversalTime()
+# If any uploads failed this run, keep the previous delta watermark so the next
+# run re-scans the same window and retries failed files. Otherwise transient
+# errors silently drop files (DeltaLookbackMinutes overlap is too small to be
+# a reliable backstop).
+$deltaAdvanceTo = if ($totalErrors -gt 0) {
+    Write-SyncLog "$totalErrors upload(s) failed; keeping previous delta watermark to retry next run" -Level "WARN"
+    $lastDeltaScanUtc
 } else {
-    Save-SyncState -LastDeltaScanUtc $nowUtc -LastFullScanUtc $lastFullScanUtc
+    $runCompletedUtc
+}
+if ($doFullScan) {
+    $fullAdvanceTo = if ($totalErrors -gt 0) { $lastFullScanUtc } else { $runCompletedUtc }
+    Save-SyncState -LastDeltaScanUtc $deltaAdvanceTo -LastFullScanUtc $fullAdvanceTo
+} else {
+    Save-SyncState -LastDeltaScanUtc $deltaAdvanceTo -LastFullScanUtc $lastFullScanUtc
 }
 
-# Persist S3 index cache if any uploads happened during this run (write-through).
-# Refreshes done above have already saved; this only covers incremental updates.
-if ($s3CacheDirty -and -not $needRefresh) {
+# Persist S3 index cache once after all parallel uploads complete.
+# Saving from inside the parallel block would corrupt the JSON.
+if ($s3CacheDirty) {
     Save-S3IndexCache -Objects $s3Objects -BucketName $BucketName
     Write-SyncLog "S3 index cache updated with $totalSuccess new/changed entries"
 }
@@ -580,6 +851,7 @@ Write-SyncLog "Sync completed"
 Write-SyncLog "  - Successful: $totalSuccess"
 Write-SyncLog "  - Errors: $totalErrors"
 Write-SyncLog "  - Skipped: $totalSkipped"
+Write-SyncLog "  - Transferred: $([math]::Round($totalTransferredBytes / 1MB, 2)) MB ($([math]::Round($totalTransferredBytes / 1GB, 3)) GB)"
 Write-SyncLog "=========================================="
 
 Write-SyncLog "Script finished"
