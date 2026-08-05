@@ -133,6 +133,8 @@ $SyncAfterDate = [DateTime]"2026-05-19"
 $StateFile = "C:\CEB_FTP_Data\Logs\.sync_state_boardfiles.json"
 $S3IndexCacheFile = "C:\CEB_FTP_Data\Logs\.s3_index_boardfiles.json"
 $S3IndexCacheTtlHours = 168  # 7 days; full scan refreshes when exceeded
+$HashIndexCacheFile = "C:\CEB_FTP_Data\Logs\.sync_hash_index_boardfiles.json"  # local content-hash dedup index
+$ContentHashSuffixLength = 8  # chars of SHA256 appended to keys to guarantee content-unique names
 $DeltaLookbackMinutes = 10
 $FullReconcileIntervalMinutes = 360
 $AppendDateSuffixIfNoDateInName = $true
@@ -488,6 +490,95 @@ function Save-S3IndexCache {
     }
 }
 
+function Add-ContentHashSuffix {
+    # Appends a short fragment of the content SHA256 to the file name so two
+    # DIFFERENT contents can never land on the same S3 key, even if they share
+    # the same date suffix (i.e. the same LastWriteTime second).
+    param(
+        [string]$S3Key,
+        [string]$ContentSha256,
+        [int]$FragmentLength = 8
+    )
+
+    if ([string]::IsNullOrWhiteSpace($ContentSha256)) {
+        return $S3Key
+    }
+
+    $len = [Math]::Min($FragmentLength, $ContentSha256.Length)
+    $fragment = $ContentSha256.Substring(0, $len)
+
+    $lastSlash = $S3Key.LastIndexOf('/')
+    $directoryPrefix = ""
+    $fileName = $S3Key
+    if ($lastSlash -ge 0) {
+        $directoryPrefix = $S3Key.Substring(0, $lastSlash + 1)
+        $fileName = $S3Key.Substring($lastSlash + 1)
+    }
+
+    $baseName = [System.IO.Path]::GetFileNameWithoutExtension($fileName)
+    $extension = [System.IO.Path]::GetExtension($fileName)
+
+    return "$directoryPrefix$baseName`_$fragment$extension"
+}
+
+function Get-HashIndexFromCache {
+    # Loads the local content-hash dedup index: relpath -> @{ Hash; Size; LastWriteUtc }.
+    param([string]$Path)
+
+    if (-not (Test-Path $Path)) {
+        return @{}
+    }
+
+    try {
+        $raw = Get-Content -Path $Path -Raw -ErrorAction Stop
+        if ([string]::IsNullOrWhiteSpace($raw)) { return @{} }
+
+        $cache = $raw | ConvertFrom-Json
+        $ht = @{}
+        if ($cache.PSObject.Properties.Name -contains "Entries" -and $cache.Entries) {
+            foreach ($prop in $cache.Entries.PSObject.Properties) {
+                $v = $prop.Value
+                $ht[$prop.Name] = @{
+                    Hash         = [string]$v.Hash
+                    Size         = [long]$v.Size
+                    LastWriteUtc = [string]$v.LastWriteUtc
+                }
+            }
+        }
+        return $ht
+    } catch {
+        Write-SyncLog "WARN reading hash index cache: $($_.Exception.Message)" -Level "WARN"
+        return @{}
+    }
+}
+
+function Save-HashIndexCache {
+    param([hashtable]$Entries, [string]$Path)
+
+    $payload = [PSCustomObject]@{
+        GeneratedAtUtc = (Get-Date).ToUniversalTime().ToString("o")
+        Entries        = $Entries
+    }
+    $json = $payload | ConvertTo-Json -Depth 5 -Compress
+
+    $maxAttempts = 5
+    for ($i = 0; $i -lt $maxAttempts; $i++) {
+        try {
+            if (Test-Path $Path) {
+                try { (Get-Item $Path).IsReadOnly = $false } catch {}
+            }
+            Set-Content -Path $Path -Value $json -Force -ErrorAction Stop
+            return
+        } catch {
+            if ($i -eq ($maxAttempts - 1)) {
+                Write-SyncLog "WARN saving hash index cache after $maxAttempts attempts: $($_.Exception.Message)" -Level "WARN"
+                return
+            }
+            Start-Sleep -Milliseconds 500
+        }
+    }
+}
+
 # -----------------------------------------------------------------------------
 # MAIN PROCESS - Recursive scan
 # -----------------------------------------------------------------------------
@@ -505,6 +596,7 @@ Write-SyncLog "=========================================="
 $totalSuccess = 0
 $totalErrors = 0
 $totalSkipped = 0
+$totalDeduped = 0
 $totalTransferredBytes = [int64]0
 
 # Load scan state and determine whether this run is full or delta
@@ -556,6 +648,14 @@ if ($needRefresh) {
     }
 }
 
+# Load the local content-hash dedup index (relpath -> hash/size/mtime). Updated
+# on the main thread after each batch; read-only inside worker threads.
+$hashIndex = Get-HashIndexFromCache -Path $HashIndexCacheFile
+$hashIndexDirty = $false
+if ($hashIndex.Count -gt 0) {
+    Write-SyncLog "Content-hash index loaded: $($hashIndex.Count) tracked files"
+}
+
 # Enumerate files via Get-ChildItem. Benchmarks on this environment show it
 # beats [IO.Directory]::EnumerateFiles + FileInfo::new because Get-ChildItem
 # returns FileInfo with metadata already populated.
@@ -602,84 +702,98 @@ if ($allFiles.Count -eq 0) {
             Write-SyncLog "[$relativePath] File size still changing, will retry next run" -Level "WARN"
             return [PSCustomObject]@{ Status = 'Skipped'; Bytes = 0; Key = $null }
         }
-        $baseS3Key = Get-S3KeyWithDateSuffixFallback -RelativePath $relativePath -FileLastWriteTimeUtc $file.LastWriteTimeUtc
-        $s3Key = $baseS3Key
         $sourceLastWriteUtc = $file.LastWriteTimeUtc.ToString("o")
         $sourceCreationUtc = $file.CreationTimeUtc.ToString("o")
         $localContentSha256 = $null
         $existingFirstSeenUtc = $null
         $metadata = @{
             "source-last-write-time-utc" = $sourceLastWriteUtc
-            "source-creation-time-utc" = $sourceCreationUtc
+            "source-creation-time-utc"   = $sourceCreationUtc
+            "source-original-relpath"    = $relativePath
         }
 
+        # ---------------------------------------------------------------------
+        # LAYER 1 - local content-hash dedup, keyed by the ORIGINAL relative path.
+        # Stops re-uploading byte-identical files that arrive with a different
+        # LastWriteTime (and therefore a different date-suffixed key).
+        # ---------------------------------------------------------------------
+        $idxEntry = $null
+        if ($hashIndex -and $hashIndex.ContainsKey($relativePath)) {
+            $idxEntry = $hashIndex[$relativePath]
+        }
+
+        # Cheap pre-check: identical size AND mtime as the last upload => unchanged.
+        # Skip without paying for a hash (this is the common steady-state case).
+        if ($idxEntry -and ([long]$idxEntry.Size -eq [long]$file.Length) -and ([string]$idxEntry.LastWriteUtc -eq $sourceLastWriteUtc)) {
+            return [PSCustomObject]@{ Status = 'Skipped'; Bytes = 0; Key = $null; RelPath = $null; Hash = $null; Size = 0; LastWriteUtc = $null }
+        }
+
+        # Size or mtime changed - hash to find out whether the CONTENT changed.
+        $localContentSha256 = Get-FileContentSha256 -FilePath $filePath
+        if ($localContentSha256 -and $idxEntry -and ([string]$idxEntry.Hash -eq $localContentSha256)) {
+            Write-SyncLog "[$relativePath] Content identical to last uploaded version (different mtime/name), skipping duplicate"
+            return [PSCustomObject]@{ Status = 'SkippedDedup'; Bytes = 0; Key = $null; RelPath = $relativePath; Hash = $localContentSha256; Size = [long]$file.Length; LastWriteUtc = $sourceLastWriteUtc }
+        }
+
+        # ---------------------------------------------------------------------
+        # Build the base key (existing naming: date-suffix fallback) and compare
+        # against S3. This preserves current key names for unchanged files (no
+        # mass re-upload after deploy) and acts as a fallback when the local
+        # index is cold/lost.
+        # ---------------------------------------------------------------------
+        $baseS3Key = Get-S3KeyWithDateSuffixFallback -RelativePath $relativePath -FileLastWriteTimeUtc $file.LastWriteTimeUtc
         if ($baseS3Key -ne $relativePath) {
             Write-SyncLog "[$relativePath] No date detected in filename. Upload key changed to: $baseS3Key" -Level "WARN"
         }
+        $s3Key = $baseS3Key
 
-        $shouldHead = $false
         $baseKeyExistsInS3 = $false
-        if ($s3Objects.Count -gt 0) {
-            if ($s3Objects.ContainsKey($baseS3Key)) {
-                $baseKeyExistsInS3 = $true
-                $shouldHead = $true
+        $sameContentInS3 = $false
+        try {
+            $s3Head = Get-S3ObjectMetadata -BucketName $BucketName -Key $baseS3Key -Region $AwsRegion -ErrorAction Stop
+            $baseKeyExistsInS3 = $true
+            $s3FirstSeenUtc = [string]$s3Head.Metadata["source-first-seen-utc"]
+            if (-not [string]::IsNullOrWhiteSpace($s3FirstSeenUtc)) {
+                $existingFirstSeenUtc = $s3FirstSeenUtc
             }
-            if (-not $s3Objects.ContainsKey($baseS3Key)) {
-                $shouldHead = $true
-            }
-        } else {
-            $shouldHead = $true
-        }
-
-        if ($shouldHead) {
-            $metadataMatches = $false
-            try {
-                $s3Head = Get-S3ObjectMetadata -BucketName $BucketName -Key $baseS3Key -Region $AwsRegion -ErrorAction Stop
-                $baseKeyExistsInS3 = $true
-                $s3FirstSeenUtc = [string]$s3Head.Metadata["source-first-seen-utc"]
-                if (-not [string]::IsNullOrWhiteSpace($s3FirstSeenUtc)) {
-                    $existingFirstSeenUtc = $s3FirstSeenUtc
-                }
-                if ($s3Head.ContentLength -eq $file.Length) {
+            if ($s3Head.ContentLength -eq $file.Length) {
+                $s3ContentSha256 = [string]$s3Head.Metadata["source-content-sha256"]
+                if (-not [string]::IsNullOrWhiteSpace($s3ContentSha256)) {
+                    # Authoritative compare: same bytes => already backed up.
+                    if ($localContentSha256 -and ($localContentSha256 -eq $s3ContentSha256)) {
+                        $sameContentInS3 = $true
+                    }
+                } else {
+                    # Legacy object without a stored hash: fall back to timestamps.
                     $s3SourceLastWriteUtc = [string]$s3Head.Metadata["source-last-write-time-utc"]
                     $s3SourceCreationUtc = [string]$s3Head.Metadata["source-creation-time-utc"]
                     if ($s3SourceLastWriteUtc -eq $sourceLastWriteUtc -and $s3SourceCreationUtc -eq $sourceCreationUtc) {
-                        $metadataMatches = $true
-                    } else {
-                        $s3ContentSha256 = [string]$s3Head.Metadata["source-content-sha256"]
-                        if (-not [string]::IsNullOrWhiteSpace($s3ContentSha256)) {
-                            if ($null -eq $localContentSha256) {
-                                $localContentSha256 = Get-FileContentSha256 -FilePath $filePath
-                            }
-                            if ($localContentSha256 -and ($localContentSha256 -eq $s3ContentSha256)) {
-                                $metadataMatches = $true
-                                Write-SyncLog "[$relativePath] Content hash matches existing S3 object, skipping upload"
-                            }
-                        }
+                        $sameContentInS3 = $true
                     }
                 }
-            } catch {
-                $msg = $_.Exception.Message
-                if ($msg -notmatch "NotFound|NoSuchKey|does not exist|404|Not Found") {
-                    Write-SyncLog "[$relativePath] WARN: Could not read S3 metadata for compare - $msg" -Level "WARN"
-                }
             }
-
-            if ($metadataMatches) {
-                Write-SyncLog "[$relativePath] Unchanged in S3 (same key/size/metadata), skipping upload"
-                return [PSCustomObject]@{ Status = 'Skipped'; Bytes = 0; Key = $null }
+        } catch {
+            $msg = $_.Exception.Message
+            if ($msg -notmatch "NotFound|NoSuchKey|does not exist|404|Not Found") {
+                Write-SyncLog "[$relativePath] WARN: Could not read S3 metadata for compare - $msg" -Level "WARN"
             }
         }
 
-        if ($VersionOnChangeAtExistingKey -and $baseKeyExistsInS3) {
-            $s3Key = Get-VersionedS3Key -S3Key $baseS3Key -VersionTimestampUtc $file.LastWriteTimeUtc
-            Write-SyncLog "[$relativePath] Existing key changed. Writing versioned key: $s3Key"
+        if ($sameContentInS3) {
+            Write-SyncLog "[$relativePath] Unchanged in S3 (same key/size/content), skipping upload"
+            # Status 'Skipped' (routine), but return hash so the local index is primed.
+            return [PSCustomObject]@{ Status = 'Skipped'; Bytes = 0; Key = $null; RelPath = $relativePath; Hash = $localContentSha256; Size = [long]$file.Length; LastWriteUtc = $sourceLastWriteUtc }
+        }
+
+        # LAYER 2 - collision guard. If the base key already holds DIFFERENT content
+        # (same date suffix but distinct bytes, e.g. same LastWriteTime second),
+        # write to a content-unique key so we never overwrite the existing version.
+        if ($baseKeyExistsInS3) {
+            $s3Key = Add-ContentHashSuffix -S3Key $baseS3Key -ContentSha256 $localContentSha256 -FragmentLength $ContentHashSuffixLength
+            Write-SyncLog "[$relativePath] Base key holds different content. Writing content-unique key: $s3Key"
         }
 
         try {
-            if ($null -eq $localContentSha256) {
-                $localContentSha256 = Get-FileContentSha256 -FilePath $filePath
-            }
             if ($localContentSha256) {
                 $metadata["source-content-sha256"] = $localContentSha256
             }
@@ -700,10 +814,10 @@ if ($allFiles.Count -eq 0) {
             Write-S3Object -BucketName $BucketName -Key $s3Key -File $filePath -Metadata $metadata -Region $AwsRegion
             $uploadDuration = (Get-Date) - $uploadStart
             Write-SyncLog "[$relativePath] Upload completed in $($uploadDuration.TotalSeconds) seconds"
-            return [PSCustomObject]@{ Status = 'Success'; Bytes = [int64]$file.Length; Key = $s3Key }
+            return [PSCustomObject]@{ Status = 'Success'; Bytes = [int64]$file.Length; Key = $s3Key; RelPath = $relativePath; Hash = $localContentSha256; Size = [long]$file.Length; LastWriteUtc = $sourceLastWriteUtc }
         } catch {
             Write-SyncLog "[$relativePath] ERROR during upload: $($_.Exception.Message)" -Level "ERROR"
-            return [PSCustomObject]@{ Status = 'Error'; Bytes = 0; Key = $null }
+            return [PSCustomObject]@{ Status = 'Error'; Bytes = 0; Key = $null; RelPath = $null; Hash = $null; Size = 0; LastWriteUtc = $null }
         }
     }
 
@@ -743,7 +857,8 @@ if ($allFiles.Count -eq 0) {
         $functionsToInject = @(
             'Write-SyncLog', 'Test-FileNotLocked', 'Get-FileStableSize',
             'Get-FileContentSha256', 'Test-FileNameHasDate',
-            'Get-S3KeyWithDateSuffixFallback', 'Get-VersionedS3Key'
+            'Get-S3KeyWithDateSuffixFallback', 'Get-VersionedS3Key',
+            'Add-ContentHashSuffix'
         )
         foreach ($funcName in $functionsToInject) {
             $funcDef = (Get-Command $funcName).Definition
@@ -761,7 +876,9 @@ if ($allFiles.Count -eq 0) {
             AppendDateSuffixIfNoDateInName = $AppendDateSuffixIfNoDateInName
             DateSuffixFormat               = $DateSuffixFormat
             VersionOnChangeAtExistingKey   = $VersionOnChangeAtExistingKey
+            ContentHashSuffixLength        = $ContentHashSuffixLength
             s3Objects                      = $s3Objects
+            hashIndex                      = $hashIndex
         }
         foreach ($pair in $varsToInject.GetEnumerator()) {
             $iss.Variables.Add(
@@ -815,8 +932,21 @@ if ($allFiles.Count -eq 0) {
                     $s3CacheDirty = $true
                 }
             }
-            'Error'   { $totalErrors++ }
-            'Skipped' { $totalSkipped++ }
+            'Error'        { $totalErrors++ }
+            'SkippedDedup' { $totalSkipped++; $totalDeduped++ }
+            'Skipped'      { $totalSkipped++ }
+        }
+
+        # Update the local content-hash index for anything we hashed this run
+        # (both fresh uploads and dedup-skips). Storing the current mtime/size on
+        # a dedup-skip lets the cheap pre-check short-circuit it next full scan.
+        if ($r.RelPath -and $r.Hash) {
+            $hashIndex[$r.RelPath] = @{
+                Hash         = [string]$r.Hash
+                Size         = [long]$r.Size
+                LastWriteUtc = [string]$r.LastWriteUtc
+            }
+            $hashIndexDirty = $true
         }
     }
 }
@@ -846,11 +976,17 @@ if ($s3CacheDirty) {
     Write-SyncLog "S3 index cache updated with $totalSuccess new/changed entries"
 }
 
+# Persist the content-hash dedup index once after all uploads/dedup decisions.
+if ($hashIndexDirty) {
+    Save-HashIndexCache -Entries $hashIndex -Path $HashIndexCacheFile
+    Write-SyncLog "Content-hash index updated ($($hashIndex.Count) tracked files, $totalDeduped duplicate(s) skipped this run)"
+}
+
 Write-SyncLog "=========================================="
 Write-SyncLog "Sync completed"
 Write-SyncLog "  - Successful: $totalSuccess"
 Write-SyncLog "  - Errors: $totalErrors"
-Write-SyncLog "  - Skipped: $totalSkipped"
+Write-SyncLog "  - Skipped: $totalSkipped (of which duplicates by content-hash: $totalDeduped)"
 Write-SyncLog "  - Transferred: $([math]::Round($totalTransferredBytes / 1MB, 2)) MB ($([math]::Round($totalTransferredBytes / 1GB, 3)) GB)"
 Write-SyncLog "=========================================="
 
